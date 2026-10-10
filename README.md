@@ -1,2 +1,1 @@
-# votyer
-ripoff
+voyter
