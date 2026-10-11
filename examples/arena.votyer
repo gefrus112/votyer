@@ -1,0 +1,64 @@
+// ============================================================
+//  ARENA — a combat sandbox. No items, no exit:
+//  clear every enemy to win. Shows `enemies left`.
+// ============================================================
+
+game "Arena" {
+    size 800 500
+    sky #1a0f14
+    floor #2b1a1a
+    fog 0.35
+    speed 3.4
+    minimap off
+}
+
+// # wall · . floor · P player · E drone · S brute
+map {
+    "##########"
+    "#P......E#"
+    "#........#"
+    "#..E..E..#"
+    "#........#"
+    "#E......S#"
+    "##########"
+}
+
+enemy "drone" {
+    char "E"
+    shape blob
+    color #a78bfa
+    speed 1.4
+    sight 7
+    hp 20
+    damage 10
+}
+
+enemy "brute" {
+    char "S"
+    shape skull
+    color #ff5566
+    speed 0.9
+    sight 9
+    hp 60
+    damage 30
+}
+
+rules {
+    on touch enemy {
+        shake 0.35
+    }
+    on enemy dead {
+        score += 10
+        if enemies left == 0 {
+            sound win
+            say "ARENA CLEARED!"
+            wait 1.5 {
+                win
+            }
+        }
+    }
+}
+
+on start {
+    say "Clear the arena. Every kill pays 10."
+}

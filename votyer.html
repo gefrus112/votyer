@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crystal Quest — a votyer.js game</title>
+<meta name="description" content="A complete retro raycasting game written in the votyer language. This entire game is one votyer script.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="page-demo">
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html">
+      <span class="logo-mark"></span>
+      <span class="logo-text">votyer<span class="logo-js">.js</span></span>
+      <span class="logo-badge">v1.0</span>
+    </a>
+    <div class="nav-links" id="nav-links">
+      <a href="docs.html">Docs</a>
+      <a href="tutorial.html">Tutorial</a>
+      <a href="playground.html">Playground</a>
+      <a href="votyer.html" class="active">Demo</a>
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<main class="demo-wrap">
+  <header class="demo-head">
+    <p class="eyebrow">PLAYABLE DEMO — WRITTEN 100% IN THE VOTYER LANGUAGE</p>
+    <h1>CRYSTAL QUEST</h1>
+    <p class="demo-sub">Collect all <b>6 crystals</b>, avoid the guards, survive the stalker, then reach the violet portal.<br>
+    This whole game is the <code>&lt;script type="text/votyer"&gt;</code> block on this page — <b>view source</b> to see it.</p>
+  </header>
+
+  <div class="demo-stage">
+    <canvas id="game" width="960" height="560" aria-label="Crystal Quest game canvas"></canvas>
+  </div>
+
+  <p class="demo-controls">
+    <b>WASD</b> move &nbsp;·&nbsp; <b>mouse</b> look &nbsp;·&nbsp; <b>space / click</b> fire &nbsp;·&nbsp; <b>M</b> minimap &nbsp;·&nbsp; <b>ESC</b> pause
+  </p>
+
+  <section class="demo-notes">
+    <div class="note-card">
+      <h3>Items with handlers</h3>
+      <p>Every crystal has an <code>on take</code> handler written in votyer — score, sounds and messages are all driven by the script below.</p>
+    </div>
+    <div class="note-card">
+      <h3>Enemy AI</h3>
+      <p>Guards patrol and chase when they see you. Stalkers are faster and hit harder. You can shoot them — they have <code>hp</code>.</p>
+    </div>
+    <div class="note-card">
+      <h3>World rules</h3>
+      <p>The exit portal stays <code>locked</code> until every item is taken — implemented with the <code>on all items taken</code> rule.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-logo">votyer<span class="logo-js">.js</span></span>
+    <span>the next-gen language for retro HTML5 games</span>
+    <span class="footer-links">
+      <a href="docs.html">Docs</a> ·
+      <a href="tutorial.html">Tutorial</a> ·
+      <a href="playground.html">Playground</a> ·
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </span>
+  </div>
+</footer>
+
+<script src="votyer.js"></script>
+<script type="text/votyer" data-canvas="#game">
+// ============================================================
+//  CRYSTAL QUEST — a complete retro raycasting game
+//  written in the votyer language. This is the whole game.
+// ============================================================
+
+game "Crystal Quest" {
+    size 960 560
+    sky #101426          // ceiling
+    floor #3d2b1f        // floor
+    fog 0.45             // view distance / atmosphere
+    speed 3.2            // player move speed
+    turn 2.8             // keyboard turn speed
+    fov 68               // field of view
+    minimap on
+    texture on
+}
+
+// colored wall variants — any single character becomes a wall
+palette {
+    "1" #5a3b8f          // alien brick
+    "2" #2f6f6a          // teal stone
+}
+
+// # wall · . floor · P player start · C crystal · E guard
+// S stalker · H medkit · G exit portal
+map {
+    "#####################"
+    "#P........#........C#"
+    "#.#####.###.######.H#"
+    "#.#.E.#.....#....#.##"
+    "#.#.#.#####.#.##.#..#"
+    "#...#..C..#.#..#.#.C#"
+    "#.###.#####.##.#.##.#"
+    "#.#.........#..#C.#.#"
+    "#.#.#####.#.##.##.#.#"
+    "#...#C....#..H....#.#"
+    "#####.###.#######.#.#"
+    "#E......#.....S.#.#.#"
+    "#.#####.#######.#.#.#"
+    "#C......#..G.......E#"
+    "#####################"
+}
+
+item "crystal" {
+    char "C"
+    shape crystal
+    color #5eead4
+    value 25
+    glow on
+    on take {
+        score += 25
+        sound pickup
+        if items left > 0 {
+            say "Crystal! " + items left + " to go."
+        } else {
+            say "That was the last crystal!"
+        }
+    }
+}
+
+item "medkit" {
+    char "H"
+    shape orb
+    color #41d98a
+    glow on
+    on take {
+        heal 25
+        sound pickup
+        say "Medkit — +25 HP"
+    }
+}
+
+enemy "guard" {
+    char "E"
+    shape ghost
+    color #e2445c
+    speed 1.2
+    sight 6
+    hp 40
+    damage 15
+}
+
+enemy "stalker" {
+    char "S"
+    shape robot
+    color #f59e0b
+    speed 2.0
+    sight 8
+    hp 25
+    damage 25
+}
+
+exit {
+    char "G"
+    color #8b5cf6
+    locked on
+}
+
+rules {
+    on all items taken {
+        sound unlock
+        say "The exit portal hums to life!"
+    }
+    on touch enemy {
+        shake 0.4
+        say "Keep away from me!"
+    }
+    on reach exit {
+        sound win
+        win
+    }
+}
+
+on start {
+    say "Collect all 6 crystals."
+    spawn "guard" 9.5 7.5
+    wait 2.5 {
+        say "Stalkers are fast. Shoot them!"
+    }
+    wait 5 {
+        say "Find the violet portal to escape."
+    }
+}
+
+on win {
+    say "Escape complete. Nice flying."
+}
+
+on lose {
+    say "The labyrinth claims another soul."
+}
+</script>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docs — votyer.js</title>
+<meta name="description" content="The complete votyer.js language reference: game blocks, maps, items, enemies, rules, events, commands and the embedding API.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html">
+      <span class="logo-mark"></span>
+      <span class="logo-text">votyer<span class="logo-js">.js</span></span>
+      <span class="logo-badge">v1.0</span>
+    </a>
+    <div class="nav-links" id="nav-links">
+      <a href="docs.html" class="active">Docs</a>
+      <a href="tutorial.html">Tutorial</a>
+      <a href="playground.html">Playground</a>
+      <a href="votyer.html">Demo</a>
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="page">
+  <aside class="sidebar">
+    <h4>Start here</h4>
+    <a href="#introduction">Introduction</a>
+    <a href="#getting-started">Getting started</a>
+    <a href="#anatomy">Anatomy of a game</a>
+    <h4>Language</h4>
+    <a href="#game-block">The game block</a>
+    <a href="#map">Maps &amp; palettes</a>
+    <a href="#items">Items</a>
+    <a href="#enemies">Enemies</a>
+    <a href="#exit">The exit</a>
+    <a href="#rules">Rules</a>
+    <a href="#events">Events</a>
+    <h4>Reference</h4>
+    <a href="#statements">Statements &amp; commands</a>
+    <a href="#expressions">Expressions</a>
+    <a href="#shapes">Sprite shapes</a>
+    <a href="#sounds">Sounds</a>
+    <a href="#controls">Player controls</a>
+    <h4>Advanced</h4>
+    <a href="#api">JavaScript API</a>
+    <a href="#faq">FAQ</a>
+  </aside>
+
+  <main class="content">
+    <span class="pill">Reference — votyer v1.0</span>
+    <h1>Language documentation</h1>
+    <p>Everything the votyer language can do, in one page. votyer is a small, readable language that compiles in the browser into a running retro 3D game. If you have ever written a config file, you can write votyer — and if you have ever written JavaScript, you will feel at home in its handlers.</p>
+
+    <!-- ==================== INTRODUCTION ==================== -->
+    <h2 id="introduction"><span class="hanchor">§</span>Introduction</h2>
+    <p>votyer is a <b>domain-specific language for retro HTML5 games</b>. A votyer program describes four things: the <b>world</b> (game settings, the map), the <b>things</b> in it (items, enemies, the exit), the <b>rules</b> of the world, and <b>event handlers</b> that run when things happen. Everything else — the raycasting renderer, physics, audio, HUD, menus — is handled by the engine inside <code>votyer.js</code>.</p>
+    <p>The language is deliberately tiny. There are no classes, no imports and no async. There are blocks, a handful of commands, simple expressions and events. That keeps game scripts short enough to read top-to-bottom like a level design document, which is exactly the point. Most complete games fit in under 150 lines.</p>
+    <p>Under the hood, the runtime is a classic three-stage compiler: a <b>lexer</b> turns your text into tokens, a <b>parser</b> builds an abstract syntax tree, and an <b>interpreter</b> executes handler blocks against the live engine. Compile errors are reported with line and column numbers both in the browser console and on the canvas itself.</p>
+
+    <!-- ==================== GETTING STARTED ==================== -->
+    <h2 id="getting-started"><span class="hanchor">§</span>Getting started</h2>
+    <p>A votyer game is embedded in a normal HTML5 page. Load the runtime, then write your program inside a <code>&lt;script type="text/votyer"&gt;</code> tag. When the page loads, the runtime finds every votyer script and boots it automatically.</p>
+    <pre data-highlight>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;/head&gt;
+&lt;body&gt;
+
+&lt;canvas id="game"&gt;&lt;/canvas&gt;
+
+&lt;script src="votyer.js"&gt;&lt;/script&gt;
+
+&lt;script type="text/votyer" data-canvas="#game"&gt;
+game "Hello World" {
+    size 800 500
+}
+
+map {
+    "########"
+    "#P.....#"
+    "#......#"
+    "########"
+}
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+    <p>The <code>data-canvas</code> attribute tells the engine which canvas to render into. If you omit it, the runtime creates a canvas for you right after the script tag and styles it responsively. That is all the HTML5 integration you need — the rest of the page can be a normal website, so games can live inside blog posts, landing pages or documentation exactly like the demo on this site does.</p>
+    <div class="callout"><b>No server required.</b> Because there is no build step and no fetch at runtime, votyer games work from <code>file://</code>, from GitHub Pages, from any CDN, or even attached to an email as a single HTML file.</div>
+
+    <!-- ==================== ANATOMY ==================== -->
+    <h2 id="anatomy"><span class="hanchor">§</span>Anatomy of a game</h2>
+    <p>A votyer program is a list of <b>declarations</b>. Order does not matter — you can declare items before the map or after it. The compiler collects everything into a game blueprint before the engine boots, so you are free to organize the file however reads best for you. A typical layout looks like this:</p>
+    <pre data-highlight>game "Crystal Quest" { ... }   // 1. settings — size, colors, physics
+palette { ... }                // 2. optional wall colors
+map { ... }                    // 3. the world layout
+item "crystal" { ... }         // 4. things that populate the world
+enemy "guard"   { ... }
+exit { ... }                   // 5. the way out
+rules { ... }                  // 6. world-level cause and effect
+on start { ... }               // 7. event handlers
+on tick  { ... }</pre>
+    <p>Comments use <code>//</code> for a single line and <code>/* ... */</code> for blocks, just like JavaScript. Use them liberally — votyer files are meant to be read by humans and level designers, not only by machines.</p>
+
+    <!-- ==================== GAME BLOCK ==================== -->
+    <h2 id="game-block"><span class="hanchor">§</span>The game block</h2>
+    <p>The <code>game</code> declaration sets the title and tuning of the whole game. Every setting is optional; anything you leave out falls back to a sensible retro default. The name in quotes is shown on the title screen, and the optional <code>title</code> setting lets you override the big display text separately.</p>
+    <pre data-highlight>game "Crystal Quest" {
+    size 960 560        // canvas resolution in pixels
+    title "CRYSTAL QUEST"
+    sky #101426         // ceiling color
+    floor #3d2b1f       // floor color
+    fog 0.45            // 0 = clear view, 1 = claustrophobic
+    speed 3.2           // player speed, tiles per second
+    turn 2.8            // keyboard turn speed, radians per second
+    fov 68              // field of view in degrees
+    sensitivity 0.0022  // mouse look sensitivity
+    minimap on          // show the minimap (toggle with M)
+    texture on          // retro brick shading on walls
+}</pre>
+    <table>
+      <tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+      <tr><td><code>size</code></td><td>800 500</td><td>Internal render resolution. The canvas scales to fit its container while keeping the chunky retro pixels.</td></tr>
+      <tr><td><code>sky</code> / <code>floor</code></td><td>night blue / dirt brown</td><td>Colors of the ceiling and floor bands. Accepts <code>#rgb</code> or <code>#rrggbb</code> hex colors, with or without quotes.</td></tr>
+      <tr><td><code>fog</code></td><td>0.4</td><td>How quickly walls fade into darkness with distance. Higher values shorten the view distance for a moodier dungeon.</td></tr>
+      <tr><td><code>speed</code></td><td>3.0</td><td>Player movement speed in tiles per second.</td></tr>
+      <tr><td><code>turn</code></td><td>2.6</td><td>Turning speed for the arrow keys, in radians per second.</td></tr>
+      <tr><td><code>fov</code></td><td>66</td><td>Horizontal field of view. Classic Wolfenstein-style values sit between 60 and 75.</td></tr>
+      <tr><td><code>minimap</code> / <code>texture</code></td><td>on</td><td>Turn the HUD minimap or the brick wall shading on or off.</td></tr>
+    </table>
+
+    <!-- ==================== MAP ==================== -->
+    <h2 id="map"><span class="hanchor">§</span>Maps &amp; palettes</h2>
+    <p>The <code>map</code> block is the world itself — a list of quoted strings, one per row. It is the heart of every votyer game and the part you will edit the most. Treat it like ASCII art: walls are drawn with symbols, floors are dots, and creatures and objects are single letters placed on the floor.</p>
+    <table>
+      <tr><th>Character</th><th>Meaning</th></tr>
+      <tr><td><code>#</code></td><td>A standard wall, rendered with the default stone color.</td></tr>
+      <tr><td><code>.</code> or space</td><td>Walkable floor.</td></tr>
+      <tr><td><code>P</code></td><td>The player start position and facing. If omitted, the engine spawns the player at the first open cell.</td></tr>
+      <tr><td>any letter you define</td><td>A spawn point for an item, an enemy or the exit — set with the <code>char</code> property. These cells are walkable.</td></tr>
+      <tr><td>palette characters</td><td>Colored wall variants (see below). These are solid walls too.</td></tr>
+      <tr><td>any other symbol</td><td>Anything else non-space is treated as a wall with an auto-assigned color, so you can freely use <code>%</code>, <code>=</code>, <code>+</code> and friends as decoration.</td></tr>
+    </table>
+    <p>The <code>palette</code> block assigns colors to single characters, which become wall variants. This is how you build themed levels — brick red for the dungeon, alien purple for the vault, mossy green for the sewers:</p>
+    <pre data-highlight>palette {
+    "1" #5a3b8f      // alien brick
+    "2" #2f6f6a      // teal stone
+}
+
+map {
+    "#########"
+    "#P..1..2#"
+    "#.#####.#"
+    "#.......#"
+    "#########"
+}</pre>
+    <div class="callout warn"><b>Design tip.</b> Rows may be different lengths — short rows are padded with floor — but the outer border must be sealed with walls, otherwise rays escape the world. The engine clamps out-of-bounds rays, so a leaky border looks odd rather than crashing. The tutorial ships a checker; steal it.</div>
+
+    <!-- ==================== ITEMS ==================== -->
+    <h2 id="items"><span class="hanchor">§</span>Items</h2>
+    <p>Items are pickups: crystals, coins, medkits, keys, treasure. Each <code>item</code> declaration is a <b>blueprint</b>; every occurrence of its <code>char</code> in the map spawns one instance. Items bob gently, glow, and are picked up automatically when the player walks within half a tile.</p>
+    <pre data-highlight>item "crystal" {
+    char "C"
+    shape crystal
+    color #5eead4
+    value 25
+    glow on
+    on take {
+        score += 25
+        sound pickup
+        if items left > 0 {
+            say "Crystal! " + items left + " to go."
+        } else {
+            say "That was the last one!"
+        }
+    }
+}</pre>
+    <table>
+      <tr><th>Property</th><th>What it does</th></tr>
+      <tr><td><code>char</code></td><td>The map character that spawns this item.</td></tr>
+      <tr><td><code>shape</code></td><td>Sprite shape — see the <a href="#shapes">shape reference</a>. Defaults to <code>crystal</code>.</td></tr>
+      <tr><td><code>color</code></td><td>Base color of the sprite.</td></tr>
+      <tr><td><code>value</code></td><td>Points awarded by the <i>default</i> pickup behavior (used only when there is no <code>on take</code> handler).</td></tr>
+      <tr><td><code>glow</code></td><td>Draws a soft colored halo. Defaults to on.</td></tr>
+      <tr><td><code>on take</code></td><td>A handler block that runs when picked up. If present, it <b>replaces</b> the default behavior — you decide what happens.</td></tr>
+    </table>
+    <p>Handlers are where votyer comes alive. Inside <code>on take</code> you can change variables, play sounds, show messages, and make decisions with <code>if</code>. Two queries are especially useful here: <code>items left</code> counts every untaken item in the level, and <code>items count "crystal"</code> counts untaken items of one kind — perfect for quest logic.</p>
+
+    <!-- ==================== ENEMIES ==================== -->
+    <h2 id="enemies"><span class="hanchor">§</span>Enemies</h2>
+    <p>Enemies are living obstacles. They patrol randomly until they can see the player, then chase. Touching one drains health and triggers the <code>on touch enemy</code> rule. You can also shoot enemies — each has hit points, takes damage from the blaster, flashes white on impact and dies with a satisfying descent.</p>
+    <pre data-highlight>enemy "stalker" {
+    char "S"
+    shape robot
+    color #f59e0b
+    speed 2.0      // tiles per second — faster than the player!
+    sight 8        // how far it can see you, in tiles
+    hp 25          // two blaster hits
+    damage 25      // health drained per touch
+    on hit {
+        shake 0.2
+    }
+}</pre>
+    <table>
+      <tr><th>Property</th><th>Default</th><th>What it does</th></tr>
+      <tr><td><code>speed</code></td><td>1.2</td><td>Chase and patrol speed. Keep it below the player <code>speed</code> (3.0) unless you enjoy pain.</td></tr>
+      <tr><td><code>sight</code></td><td>6</td><td>Detection radius. Enemies also need <b>line of sight</b> — walls block their vision.</td></tr>
+      <tr><td><code>hp</code></td><td>30</td><td>Hit points. The player blaster deals 10 damage per shot.</td></tr>
+      <tr><td><code>damage</code></td><td>15</td><td>Health lost when the enemy touches the player. Touches have a 1 second invulnerability window.</td></tr>
+      <tr><td><code>on hit</code></td><td>—</td><td>Runs every time this enemy takes a blaster hit.</td></tr>
+    </table>
+    <p>You can create new enemies at runtime with the <code>spawn</code> command, which clones a blueprint at a map position — useful for ambushes triggered by item pickups. Dead enemies trigger the <code>on enemy dead</code> rule once each, so kills can be scored or narrated.</p>
+
+    <!-- ==================== EXIT ==================== -->
+    <h2 id="exit"><span class="hanchor">§</span>The exit</h2>
+    <p>The exit is a portal sprite that ends the level. It starts <b>locked</b> by default: walking into a locked portal plays a denied sound and tells the player what is missing. When every item has been taken, the portal unlocks automatically with a rumble — or you can open it manually from any handler with <code>unlock exit</code>. This makes classic quest loops trivial to express: collect the crystals, then escape.</p>
+    <pre data-highlight>exit {
+    char "G"
+    color #8b5cf6
+    locked on
+}</pre>
+    <p>When the player walks into an unlocked portal, one of two things happens. If you wrote an <code>on reach exit</code> rule, it runs and <b>you</b> decide the outcome — maybe the exit is a trap, maybe it needs a key. If there is no rule, the engine simply plays the win sound and shows the victory screen. Both paths fire the <code>on win</code> event, where you can display a final message.</p>
+
+    <!-- ==================== RULES ==================== -->
+    <h2 id="rules"><span class="hanchor">§</span>Rules</h2>
+    <p>Rules are world-level cause and effect — they observe what is happening in the simulation and react. They are declared together in one <code>rules</code> block, and each trigger fires at most once per event occurrence:</p>
+    <pre data-highlight>rules {
+    on all items taken {
+        sound unlock
+        say "The exit portal hums to life!"
+    }
+    on touch enemy {
+        shake 0.4
+        say "Keep away from me!"
+    }
+    on reach exit  { win }
+    on bump wall   { say "That is a wall." }
+    on enemy dead  { score += 50 }
+}</pre>
+    <table>
+      <tr><th>Trigger</th><th>Fires when…</th></tr>
+      <tr><td><code>on touch enemy</code></td><td>An enemy makes contact with the player (rate limited by invulnerability frames).</td></tr>
+      <tr><td><code>on all items taken</code></td><td>The last remaining item is picked up. The exit also auto-unlocks at this moment.</td></tr>
+      <tr><td><code>on reach exit</code></td><td>The player steps into an <b>unlocked</b> exit portal.</td></tr>
+      <tr><td><code>on bump wall</code></td><td>The player walks into a wall (once per second at most).</td></tr>
+      <tr><td><code>on enemy dead</code></td><td>An enemy loses its last hit point.</td></tr>
+    </table>
+
+    <!-- ==================== EVENTS ==================== -->
+    <h2 id="events"><span class="hanchor">§</span>Events</h2>
+    <p>Events are handler blocks declared at the top level with <code>on</code>. Unlike rules, events hook into the game's lifecycle rather than world happenings:</p>
+    <table>
+      <tr><th>Event</th><th>Runs…</th></tr>
+      <tr><td><code>on start</code></td><td>Every time the game starts or restarts — after the title screen, before the first frame. Use it for mission briefings and timed hints with <code>wait</code>.</td></tr>
+      <tr><td><code>on tick</code></td><td>Once per frame during play. Use it for ambient logic — a clock, a chase timer, growing pressure. Keep it light.</td></tr>
+      <tr><td><code>on win</code></td><td>Right after a victory is registered, before the win screen is drawn.</td></tr>
+      <tr><td><code>on lose</code></td><td>Right after health reaches zero, before the game-over screen.</td></tr>
+    </table>
+    <pre data-highlight>on start {
+    say "Collect all 6 crystals."
+    wait 2.5 { say "Beware the stalkers — they are fast." }
+    wait 5   { say "Find the violet portal to escape." }
+}</pre>
+
+    <!-- ==================== STATEMENTS ==================== -->
+    <h2 id="statements"><span class="hanchor">§</span>Statements &amp; commands</h2>
+    <p>Inside any handler block you can use the full statement set. Statements run top to bottom, and blocks nest, so <code>if</code> can contain more <code>if</code>, <code>wait</code> can schedule any mix of statements, and so on.</p>
+    <h3>Variables &amp; assignment</h3>
+    <p><code>score</code> and <code>health</code> exist from the moment the game starts. Create your own with <code>let</code>, and update anything with <code>=</code>, <code>+=</code> or <code>-=</code>:</p>
+    <pre data-highlight>on start {
+    let combo = 1
+    let target = 100
+    score += 10
+    health -= 5
+    combo += 1
+}</pre>
+    <h3>Commands</h3>
+    <table>
+      <tr><th>Command</th><th>Effect</th></tr>
+      <tr><td><code>say "text"</code></td><td>Show a message toast at the bottom of the screen for ~3 seconds.</td></tr>
+      <tr><td><code>sound name</code></td><td>Play one of the ten built-in synth sounds — see the <a href="#sounds">sound reference</a>.</td></tr>
+      <tr><td><code>shake 0.4</code></td><td>Screen shake with the given intensity (0 to 1.5).</td></tr>
+      <tr><td><code>win</code> / <code>lose</code></td><td>End the game in victory or defeat immediately.</td></tr>
+      <tr><td><code>unlock exit</code></td><td>Open a locked exit portal with a rumble sound.</td></tr>
+      <tr><td><code>heal 25</code> / <code>hurt 10</code></td><td>Modify player health directly (capped at 100). Reaching 0 triggers defeat.</td></tr>
+      <tr><td><code>spawn "guard" 9.5 7.5</code></td><td>Create a new enemy of the named blueprint at tile coordinates.</td></tr>
+      <tr><td><code>log "debug"</code></td><td>Print to the browser console — your debugging best friend.</td></tr>
+    </table>
+    <h3>Control flow</h3>
+    <pre data-highlight>if items left == 0 { unlock exit }
+else { say "Keep collecting!" }
+
+if health < 30 and health > 0 { say "You are badly hurt!" }
+
+repeat 3 { log "pulse" }
+
+wait 2 { say "Two seconds later..." }</pre>
+    <p>Conditions support <code>and</code>, <code>or</code> and <code>not</code>, plus all the comparison operators. <code>repeat</code> runs a block a fixed number of times right now, while <code>wait</code> schedules its block to run after a delay in seconds — timers keep running through pauses, which makes them great for staged tutorials and delayed traps.</p>
+
+    <!-- ==================== EXPRESSIONS ==================== -->
+    <h2 id="expressions"><span class="hanchor">§</span>Expressions</h2>
+    <p>Anywhere a value is expected you can write an expression. votyer has numbers, strings, hex colors, booleans and variables, and the usual arithmetic with standard precedence — multiplication binds tighter than addition, parentheses group, and <code>+</code> concatenates strings when either side is a string.</p>
+    <table>
+      <tr><th>Expression</th><th>Value</th></tr>
+      <tr><td><code>2 + 3 * 4</code></td><td>14</td></tr>
+      <tr><td><code>"Crystal! " + items left</code></td><td><i>Crystal! 5</i> — numbers auto-convert</td></tr>
+      <tr><td><code>score</code> / <code>health</code></td><td>Live engine variables, readable everywhere</td></tr>
+      <tr><td><code>time</code></td><td>Seconds since the current run started</td></tr>
+      <tr><td><code>items left</code></td><td>Count of untaken items in the whole level</td></tr>
+      <tr><td><code>items count "crystal"</code></td><td>Untaken items of one kind</td></tr>
+      <tr><td><code>random 6</code></td><td>A random integer from 0 to 5 — dice, ambushes, chatter</td></tr>
+      <tr><td><code>health == 100</code>, <code>items left > 0</code></td><td>Booleans for <code>if</code> conditions</td></tr>
+    </table>
+
+    <!-- ==================== SHAPES ==================== -->
+    <h2 id="shapes"><span class="hanchor">§</span>Sprite shapes</h2>
+    <p>Sprites are drawn procedurally at boot — no image files, no loading, crisp at every resolution. Any shape works for items or enemies, so a "crystal golem" made of <code>shape crystal</code> enemies is completely legal and honestly a great idea:</p>
+    <table>
+      <tr><th>Shape</th><th>Look</th><th>Good for</th></tr>
+      <tr><td><code>crystal</code></td><td>Faceted diamond with a highlight</td><td>gems, quest items, golems</td></tr>
+      <tr><td><code>orb</code></td><td>Soft radial sphere</td><td>medkits, energy, potions</td></tr>
+      <tr><td><code>star</code></td><td>Five-point star</td><td>bonuses, collectathons</td></tr>
+      <tr><td><code>chest</code></td><td>Wooden chest with a gold lock</td><td>treasure, checkpoints</td></tr>
+      <tr><td><code>ghost</code></td><td>Wavy-bottom spook with eyes</td><td>classic patrollers</td></tr>
+      <tr><td><code>robot</code></td><td>Boxy droid with antennae</td><td>fast hunters</td></tr>
+      <tr><td><code>blob</code></td><td>Round creature with eyes</td><td>slow swarms</td></tr>
+      <tr><td><code>skull</code></td><td>Grinning skull</td><td>dread, boss arenas</td></tr>
+    </table>
+
+    <!-- ==================== SOUNDS ==================== -->
+    <h2 id="sounds"><span class="hanchor">§</span>Sounds</h2>
+    <p>All audio is synthesized live with WebAudio oscillators, so games stay asset-free and load instantly. Play any of these with <code>sound &lt;name&gt;</code>; the engine already plays several of them automatically for pickups, hits, wins and losses.</p>
+    <table>
+      <tr><th>Name</th><th>Vibe</th></tr>
+      <tr><td><code>blip</code></td><td>short UI chirp</td></tr>
+      <tr><td><code>pickup</code></td><td>rising two-note sparkle</td></tr>
+      <tr><td><code>hurt</code></td><td>gritty downward growl</td></tr>
+      <tr><td><code>hit</code></td><td>punchy impact</td></tr>
+      <tr><td><code>shoot</code></td><td>laser zap</td></tr>
+      <tr><td><code>kill</code></td><td>long descending boom</td></tr>
+      <tr><td><code>unlock</code></td><td>three ascending chimes</td></tr>
+      <tr><td><code>denied</code></td><td>double buzz</td></tr>
+      <tr><td><code>win</code></td><td>four-note victory fanfare</td></tr>
+      <tr><td><code>lose</code></td><td>sad descending phrase</td></tr>
+    </table>
+
+    <!-- ==================== CONTROLS ==================== -->
+    <h2 id="controls"><span class="hanchor">§</span>Player controls</h2>
+    <p>Controls follow the conventions every retro FPS player already knows, and they work out of the box with no configuration:</p>
+    <table>
+      <tr><th>Input</th><th>Action</th></tr>
+      <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Move forward, strafe left, back, strafe right</td></tr>
+      <tr><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Move and turn (classic tank controls)</td></tr>
+      <tr><td>Mouse</td><td>Look — click the canvas once to lock the pointer</td></tr>
+      <tr><td><kbd>Space</kbd> / click</td><td>Fire the blaster (hold to auto-fire)</td></tr>
+      <tr><td><kbd>M</kbd></td><td>Toggle the minimap</td></tr>
+      <tr><td><kbd>F</kbd></td><td>Toggle the FPS counter</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Pause / resume</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Start from the title screen, restart after win or loss</td></tr>
+    </table>
+
+    <!-- ==================== API ==================== -->
+    <h2 id="api"><span class="hanchor">§</span>JavaScript API</h2>
+    <p>Prefer to drive votyer from JavaScript instead of script tags? The runtime exposes a small API on the global <code>Votyer</code> object. This is how the playground on this site works — it compiles editor text and boots it into a canvas on every click:</p>
+    <pre data-highlight>// compile a votyer program without running it
+const result = Votyer.compile(source);
+if (result.ok) {
+  result.spec;   // the resolved game blueprint
+  result.ast;    // the abstract syntax tree
+} else {
+  result.errors; // array of human-readable error strings
+}
+
+// compile AND boot into a canvas (selector or element)
+const game = Votyer.run(source, "#game");
+
+// the returned engine (when ok) is a live game:
+game.state;     // 'menu' | 'play' | 'pause' | 'win' | 'lose'
+game.destroy(); // stop the loop and remove all listeners
+
+// other exports
+Votyer.version;         // "1.0.0"
+Votyer.lex(source);     // raw tokens
+Votyer.sounds;          // ["blip", "pickup", ...]</pre>
+    <p>If compilation fails, <code>Votyer.run</code> draws the error message directly onto the target canvas — with line and column numbers — so players and you see what went wrong even with the console closed. A failed run returns an object with an <code>errors</code> array instead of an engine.</p>
+
+    <!-- ==================== FAQ ==================== -->
+    <h2 id="faq"><span class="hanchor">§</span>FAQ</h2>
+    <h3>Is this really 3D?</h3>
+    <p>It is true first-person 3D rendering using the classic <b>raycasting</b> technique — the same family of math that powered Wolfenstein 3D. The world is flat, but corridors, depth, sprites and fog are rendered in genuine perspective, column by column, at 60 fps.</p>
+    <h3>Where does the WebGL come in?</h3>
+    <p>The galaxy background on this site is a live particle simulation, and the engine composites through hardware-accelerated canvas. votyer's renderer is deliberately written against the 2D canvas API for maximum compatibility — it runs everywhere HTML5 runs, including locked-down school laptops and old mobile browsers, with zero shader-compiler surprises.</p>
+    <h3>Can I use my own images or music?</h3>
+    <p>Not yet — votyer v1 is intentionally asset-free so that games are single, portable HTML files. Procedural sprites and synth audio keep every game self-contained. Image textures and custom audio are the top candidates for a future version.</p>
+    <h3>How big is the engine?</h3>
+    <p>Around 100 KB raw, roughly 25 KB gzipped — smaller than most favicon payloads — and it contains the complete language, renderer, audio synth and UI. There are no dependencies of any kind.</p>
+    <h3>Why another language?</h3>
+    <p>Because the fastest way to learn game development is a language that only speaks games. votyer removes everything that is not level design: no DOM, no event listener plumbing, no asset pipelines. You write what the world is and what should happen; the engine handles rendering, physics and sound. When you outgrow it, every concept — entities, events, collision, game loops — transfers directly to bigger engines.</p>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-logo">votyer<span class="logo-js">.js</span></span>
+    <span>the next-gen language for retro HTML5 games</span>
+    <span class="footer-links">
+      <a href="index.html">Home</a> ·
+      <a href="tutorial.html">Tutorial</a> ·
+      <a href="playground.html">Playground</a> ·
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </span>
+  </div>
+</footer>
+
+<script src="votyer.js"></script>
+<script src="assets/highlight.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

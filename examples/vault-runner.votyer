@@ -1,0 +1,100 @@
+// ============================================================
+//  VAULT RUNNER — the game you build in the 10-minute tutorial
+//  Grab the gem, sweep the coins, unlock the vault, escape.
+// ============================================================
+
+game "Vault Runner" {
+    size 800 500
+    sky #14142a          // ceiling
+    floor #3a2c22        // floor
+    fog 0.5              // moody view distance
+    speed 3.0            // player speed
+}
+
+// colored wall variant
+palette {
+    "1" #6d4a2f          // rust brick
+}
+
+// # wall · . floor · P player · C gem · c coin · S sentinel · G exit
+map {
+    "###########"
+    "#P....1...#"
+    "#.###.###.#"
+    "#.#C...#c.#"
+    "#.#.###..S#"
+    "#...#.G.c.#"
+    "###########"
+}
+
+item "gem" {
+    char "C"
+    shape crystal
+    color #5eead4
+    value 50
+    glow on
+    on take {
+        score += 50
+        sound pickup
+        say "The vault gem! Now the coins."
+    }
+}
+
+item "coin" {
+    char "c"
+    shape orb
+    color #fbbf24
+    value 10
+    on take {
+        score += 10
+        sound blip
+    }
+}
+
+enemy "sentinel" {
+    char "S"
+    shape ghost
+    color #e2445c
+    speed 1.1
+    sight 5
+    hp 30
+    damage 20
+}
+
+exit {
+    char "G"
+    color #8b5cf6
+    locked on
+}
+
+rules {
+    on all items taken {
+        sound unlock
+        say "The vault door grinds open!"
+    }
+    on touch enemy {
+        shake 0.3
+        say "Ouch — watch the sentinels!"
+    }
+    on enemy dead {
+        score += 25
+    }
+    on reach exit {
+        win
+    }
+}
+
+on start {
+    say "Grab the gem and every coin."
+    wait 3 {
+        say "Then find the vault door."
+    }
+}
+
+on win {
+    say "Vault cleared like a pro."
+}
+
+on lose {
+    say "The vault keeps its secrets."
+}

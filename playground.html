@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playground — votyer.js</title>
+<meta name="description" content="Write votyer code in the browser and run it instantly. The whole language and raycasting engine compile live.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html">
+      <span class="logo-mark"></span>
+      <span class="logo-text">votyer<span class="logo-js">.js</span></span>
+      <span class="logo-badge">v1.0</span>
+    </a>
+    <div class="nav-links" id="nav-links">
+      <a href="docs.html">Docs</a>
+      <a href="tutorial.html">Tutorial</a>
+      <a href="playground.html" class="active">Playground</a>
+      <a href="votyer.html">Demo</a>
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<main class="section" style="padding-top:calc(var(--nav-h) + 50px); max-width:1280px; width:100%;">
+  <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:8px;">
+    <h1 class="section-title" style="margin:0;">Playground</h1>
+    <span style="color:var(--dim); font-size:13px;">edit the code — press RUN or Ctrl/Cmd+Enter</span>
+  </div>
+  <p class="section-sub" style="margin-bottom:22px;">The complete language and engine compile live in your browser. Pick a preset, tweak it, break it, fix it — nothing can crash the page because votyer errors render on the canvas.</p>
+
+  <div class="pg-wrap pg">
+    <div class="pg-editor">
+      <div class="pg-head">
+        <span class="cdot cd1" style="width:10px;height:10px;border-radius:50%;background:#ff5f57;display:inline-block;"></span>
+        <span class="cdot cd2" style="width:10px;height:10px;border-radius:50%;background:#febc2e;display:inline-block;"></span>
+        <span class="cdot cd3" style="width:10px;height:10px;border-radius:50%;background:#28c840;display:inline-block;"></span>
+        <span class="cfile">my-game.votyer</span>
+        <select id="preset" class="btn btn-ghost btn-sm" style="text-transform:none; letter-spacing:0; padding:6px 10px;" aria-label="Choose a preset">
+          <option value="starter">Preset: Getting started</option>
+          <option value="vault">Preset: Vault Runner (tutorial)</option>
+          <option value="arena">Preset: Arena combat</option>
+        </select>
+        <button class="btn btn-primary btn-sm" id="run">Run ▸</button>
+      </div>
+      <textarea id="editor" spellcheck="false" aria-label="votyer source code"></textarea>
+      <div class="pg-status" id="status">votyer.js v1.0 loaded — press RUN to compile</div>
+    </div>
+
+    <div class="pg-stage">
+      <div class="pg-head">
+        <span class="cfile">game output</span>
+        <span style="color:var(--dim); font-size:11.5px;">WASD · mouse · space</span>
+      </div>
+      <canvas id="stage" width="800" height="500"></canvas>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:26px;">
+    <b>Heads-up:</b> audio starts after you click (browser autoplay rules), pointer-lock mouse look needs a click on the canvas,
+    and if the canvas shows a red error panel the compiler has told you exactly which line to fix. Full language reference in the <a href="docs.html">docs</a>.
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-logo">votyer<span class="logo-js">.js</span></span>
+    <span>the next-gen language for retro HTML5 games</span>
+    <span class="footer-links">
+      <a href="index.html">Home</a> ·
+      <a href="docs.html">Docs</a> ·
+      <a href="tutorial.html">Tutorial</a> ·
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </span>
+  </div>
+</footer>
+
+<!-- ============ presets (kept as plain text so they survive HTML escaping) ============ -->
+<script type="text/plain" id="preset-starter">// a minimal votyer game — walk around, that's it!
+game "Getting Started" {
+    size 800 500
+    sky #101426
+    floor #3d2b1f
+    fog 0.45
+}
+
+map {
+    "############"
+    "#P.........#"
+    "#.########.#"
+    "#.#......#.#"
+    "#.#.1111.#.#"
+    "#.#......#.#"
+    "#.########.#"
+    "#..........#"
+    "############"
+}
+
+rules {
+    on bump wall { say "That is a wall." }
+}
+
+on start {
+    say "Welcome to votyer! Walk with WASD."
+    wait 2.5 { say "Try editing this file and pressing RUN." }
+}
+</script>
+
+<script type="text/plain" id="preset-vault">game "Vault Runner" {
+    size 800 500
+    sky #14142a
+    floor #3a2c22
+    fog 0.5
+    speed 3.0
+}
+
+palette {
+    "1" #6d4a2f
+}
+
+map {
+    "###########"
+    "#P....1...#"
+    "#.###.###.#"
+    "#.#C...#c.#"
+    "#.#.###..S#"
+    "#...#.G.c.#"
+    "###########"
+}
+
+item "gem" {
+    char "C"
+    shape crystal
+    color #5eead4
+    value 50
+    glow on
+    on take {
+        score += 50
+        sound pickup
+        say "The vault gem! Now the coins."
+    }
+}
+
+item "coin" {
+    char "c"
+    shape orb
+    color #fbbf24
+    value 10
+    on take {
+        score += 10
+        sound blip
+    }
+}
+
+enemy "sentinel" {
+    char "S"
+    shape ghost
+    color #e2445c
+    speed 1.1
+    sight 5
+    hp 30
+    damage 20
+}
+
+exit {
+    char "G"
+    color #8b5cf6
+    locked on
+}
+
+rules {
+    on all items taken {
+        sound unlock
+        say "The vault door grinds open!"
+    }
+    on touch enemy {
+        shake 0.3
+        say "Ouch — watch the sentinels!"
+    }
+    on enemy dead {
+        score += 25
+    }
+    on reach exit {
+        win
+    }
+}
+
+on start {
+    say "Grab the gem and every coin."
+    wait 3 { say "Then find the vault door." }
+}
+
+on win  { say "Vault cleared like a pro." }
+on lose { say "The vault keeps its secrets." }
+</script>
+
+<script type="text/plain" id="preset-arena">game "Arena" {
+    size 800 500
+    sky #1a0f14
+    floor #2b1a1a
+    fog 0.35
+    speed 3.4
+    minimap off
+}
+
+map {
+    "##########"
+    "#P......E#"
+    "#........#"
+    "#..E..E..#"
+    "#........#"
+    "#E......S#"
+    "##########"
+}
+
+enemy "drone" {
+    char "E"
+    shape blob
+    color #a78bfa
+    speed 1.4
+    sight 7
+    hp 20
+    damage 10
+}
+
+enemy "brute" {
+    char "S"
+    shape skull
+    color #ff5566
+    speed 0.9
+    sight 9
+    hp 60
+    damage 30
+}
+
+rules {
+    on touch enemy {
+        shake 0.35
+    }
+    on enemy dead {
+        score += 10
+        if enemies left == 0 {
+            sound win
+            say "ARENA CLEARED!"
+            wait 1.5 {
+                win
+            }
+        }
+    }
+}
+
+on start {
+    say "Clear the arena. Every kill pays 10."
+}
+</script>
+
+<script src="votyer.js"></script>
+<script src="assets/highlight.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var editor = document.getElementById('editor');
+  var stage = document.getElementById('stage');
+  var status = document.getElementById('status');
+  var presetSel = document.getElementById('preset');
+  var runBtn = document.getElementById('run');
+  var engine = null;
+
+  function presetCode(name) {
+    var el = document.getElementById('preset-' + name);
+    return el ? el.textContent.replace(/^\n+/, '') : '';
+  }
+
+  function setPreset(name) {
+    editor.value = presetCode(name);
+  }
+
+  function stopEngine() {
+    if (engine && engine.destroy) {
+      try { engine.destroy(); } catch (e) { /* already gone */ }
+    }
+    engine = null;
+  }
+
+  function run() {
+    stopEngine();
+    var code = editor.value;
+    var result = Votyer.compile(code);
+    if (!result.ok) {
+      Votyer.run(code, stage); // draws the error panel on the canvas
+      status.className = 'pg-status err';
+      status.textContent = 'COMPILE ERROR — ' + result.errors[0];
+      return;
+    }
+    engine = Votyer.run(code, stage);
+    var spec = result.spec;
+    status.className = 'pg-status ok';
+    status.textContent = 'OK — "' + spec.title + '" · map ' + spec.mapW + 'x' + spec.mapH +
+      ' · ' + Object.keys(spec.items).length + ' item type(s), ' +
+      Object.keys(spec.enemies).length + ' enemy type(s) · click the canvas & play';
+  }
+
+  runBtn.addEventListener('click', run);
+  presetSel.addEventListener('change', function () { setPreset(presetSel.value); run(); });
+  editor.addEventListener('keydown', function (e) {
+    // Tab inserts spaces
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      var s = editor.selectionStart, epos = editor.selectionEnd;
+      editor.value = editor.value.slice(0, s) + '    ' + editor.value.slice(epos);
+      editor.selectionStart = editor.selectionEnd = s + 4;
+    }
+    // Ctrl/Cmd + Enter runs
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      run();
+    }
+  });
+
+  setPreset('starter');
+  run();
+})();
+</script>
+</body>
+</html>

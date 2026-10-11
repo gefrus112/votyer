@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutorial — your first votyer game in 10 minutes</title>
+<meta name="description" content="Step-by-step tutorial: build a complete retro raycasting game with votyer.js — map, items, enemies, rules and events.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="index.html">
+      <span class="logo-mark"></span>
+      <span class="logo-text">votyer<span class="logo-js">.js</span></span>
+      <span class="logo-badge">v1.0</span>
+    </a>
+    <div class="nav-links" id="nav-links">
+      <a href="docs.html">Docs</a>
+      <a href="tutorial.html" class="active">Tutorial</a>
+      <a href="playground.html">Playground</a>
+      <a href="votyer.html">Demo</a>
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <button class="nav-burger" id="nav-burger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="page">
+  <aside class="sidebar">
+    <h4>The build</h4>
+    <a href="#step-1">1. The HTML shell</a>
+    <a href="#step-2">2. The game block</a>
+    <a href="#step-3">3. Draw the map</a>
+    <a href="#step-4">4. Items &amp; handlers</a>
+    <a href="#step-5">5. Enemies</a>
+    <a href="#step-6">6. Exit &amp; rules</a>
+    <a href="#step-7">7. Events &amp; hints</a>
+    <a href="#step-8">8. Full listing</a>
+    <h4>Then</h4>
+    <a href="#next">Where to go next</a>
+  </aside>
+
+  <main class="content">
+    <span class="pill">Tutorial · about 10 minutes</span>
+    <h1>Your first raycaster</h1>
+    <p>In this tutorial you build <b>Vault Runner</b> — a complete retro first-person game with a vault gem, collectible coins, a patrolling sentinel, a locked exit and a scripted opening sequence. Everything happens in one HTML file with zero installs. If you get stuck at any point, the finished file lives at <code>examples/vault-runner.votyer</code> in the repo, and you can paste any step into the <a href="playground.html">playground</a> to see it run instantly.</p>
+
+    <div class="tut-step" id="step-1">
+      <span class="tnum">1</span>
+      <h2 style="margin-top:6px;">The HTML shell</h2>
+      <p>Create a folder, add a file called <code>index.html</code>, and download <code>votyer.js</code> from the <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">repository</a> next to it. Then wire the two together: the runtime is one script tag, and your game is a second script tag with a special <code>type="text/votyer"</code>. The <code>data-canvas</code> attribute points at the canvas that should receive the game.</p>
+      <pre data-highlight>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Vault Runner&lt;/title&gt;
+  &lt;style&gt;
+    body { margin: 0; background: #0b0b1e; display: grid;
+           place-items: center; min-height: 100vh; }
+    canvas { max-width: 100%; box-shadow: 0 20px 60px #000; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;canvas id="game"&gt;&lt;/canvas&gt;
+
+&lt;script src="votyer.js"&gt;&lt;/script&gt;
+&lt;script type="text/votyer" data-canvas="#game"&gt;
+// ... your game goes here ...
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+      <p>Open the file in a browser right now and you should see a dark canvas with a votyer error panel — the script is empty, which is the compiler correctly telling you there is no game yet. Errors always render on the canvas with a line number, so debugging never requires the console.</p>
+    </div>
+
+    <div class="tut-step" id="step-2">
+      <span class="tnum">2</span>
+      <h2 style="margin-top:6px;">The game block</h2>
+      <p>Every votyer program starts with the <code>game</code> declaration. It names your game and tunes the feel: resolution, colors, fog density, movement speed. Replace the empty script with this:</p>
+      <pre data-highlight>game "Vault Runner" {
+    size 800 500
+    sky #14142a
+    floor #3a2c22
+    fog 0.5
+    speed 3.0
+}</pre>
+      <p>Reload the page. The title screen boots immediately — animated stars, your game name in gradient letters, and <i>CLICK OR PRESS ENTER TO START</i>. Nothing happens when you start yet because there is no world, which is the perfect excuse for the next step. Notice that the <code>fog</code> value of <code>0.5</code> already gives the menu's background corridor a moody, dungeon-like feel — fog is one of the strongest mood dials in the engine.</p>
+    </div>
+
+    <div class="tut-step" id="step-3">
+      <span class="tnum">3</span>
+      <h2 style="margin-top:6px;">Draw the map</h2>
+      <p>The <code>map</code> block is ASCII art: <code>#</code> is wall, <code>.</code> is floor, and <code>P</code> marks where the player starts. We also declare one <b>palette</b> character — <code>1</code> — which becomes a rust-brick wall variant for a bit of visual variety.</p>
+      <pre data-highlight>palette {
+    "1" #6d4a2f
+}
+
+map {
+    "###########"
+    "#P....1...#"
+    "#.###.###.#"
+    "#.#C...#c.#"
+    "#.#.###..S#"
+    "#...#.G.c.#"
+    "###########"
+}</pre>
+      <p>Reload and press Enter — you are now standing <b>inside</b> the level in first person. Walk with WASD, turn with the arrows, and click the canvas once to enable mouse look. The letters <code>C</code>, <code>c</code>, <code>S</code> and <code>G</code> are currently rendered as plain floor because nothing claims them yet; they are reserved seats for the items, enemy and exit you will add below. Try bumping into walls — collision and sliding already work.</p>
+      <div class="callout"><b>Level design tip.</b> Keep corridors 2 tiles wide in play areas and 1 tile wide for tight mazes. If a row is shorter than the others, the engine pads it with floor automatically — but always seal the outer border, or rays will render the void.</div>
+    </div>
+
+    <div class="tut-step" id="step-4">
+      <span class="tnum">4</span>
+      <h2 style="margin-top:6px;">Items and handlers</h2>
+      <p>Two item blueprints claim the map letters: a <code>gem</code> on <code>C</code> and <code>coin</code>s on <code>c</code>. The gem has an <code>on take</code> handler, which <b>replaces</b> the default pickup behavior — inside it, you have full control of what happens. The coins use the default behavior instead, which simply awards their <code>value</code> with a sound.</p>
+      <pre data-highlight>item "gem" {
+    char "C"
+    shape crystal
+    color #5eead4
+    value 50
+    glow on
+    on take {
+        score += 50
+        sound pickup
+        say "The vault gem! Now the coins."
+    }
+}
+
+item "coin" {
+    char "c"
+    shape orb
+    color #fbbf24
+    value 10
+    on take {
+        score += 10
+        sound blip
+    }
+}</pre>
+      <p>Walk into the gem: +50 points, a sparkle sound, and a toast at the bottom of the screen. Every sprite is drawn procedurally from the <code>shape</code> list — <code>crystal</code>, <code>orb</code>, <code>star</code>, <code>chest</code> — so there are no image files anywhere in your project. The <code>glow on</code> property adds a soft halo that makes pickups readable even in heavy fog.</p>
+    </div>
+
+    <div class="tut-step" id="step-5">
+      <span class="tnum">5</span>
+      <h2 style="margin-top:6px;">Enemies</h2>
+      <p>The <code>S</code> in the map is a sentinel. Enemies patrol until they have line of sight to you, then chase. Give it hit points so you can fight back, and a touch damage value with a matching rule later:</p>
+      <pre data-highlight>enemy "sentinel" {
+    char "S"
+    shape ghost
+    color #e2445c
+    speed 1.1
+    sight 5
+    hp 30
+    damage 20
+}</pre>
+      <p>Approach it and it locks on — the chase state kicks in the moment it sees you, and walls genuinely block its vision. Fire with Space or a click: three hits (30 HP / 10 damage per blast) destroy it, complete with a white flash on every impact and a death animation. Health is the red bar top-left; touching the sentinel drains 20 points of it, and at zero you get the game-over screen. Try dying on purpose — the restart loop with Enter already works.</p>
+    </div>
+
+    <div class="tut-step" id="step-6">
+      <span class="tnum">6</span>
+      <h2 style="margin-top:6px;">The exit and world rules</h2>
+      <p>The <code>G</code> is the vault door — a portal that starts locked. The <code>rules</code> block wires the world's cause and effect: when the last item is taken, unlock it; touching the sentinel shakes the screen; kills pay 25 points; reaching the open door wins.</p>
+      <pre data-highlight>exit {
+    char "G"
+    color #8b5cf6
+    locked on
+}
+
+rules {
+    on all items taken {
+        sound unlock
+        say "The vault door grinds open!"
+    }
+    on touch enemy {
+        shake 0.3
+        say "Ouch — watch the sentinels!"
+    }
+    on enemy dead {
+        score += 25
+    }
+    on reach exit {
+        win
+    }
+}</pre>
+      <p>This is the entire quest structure of the game, expressed in fourteen lines. Collect everything — the gem plus two coins — and the portal rumbles open by itself. Because the rule set is data, you can rebalance the whole game loop by editing text. Try adding a second <code>on enemy dead</code> line with <code>if enemies left == 0 { say "Arena clear!" }</code> to reward total domination.</p>
+    </div>
+
+    <div class="tut-step" id="step-7">
+      <span class="tnum">7</span>
+      <h2 style="margin-top:6px;">Events, hints and endings</h2>
+      <p>Finally the lifecycle events. <code>on start</code> runs on every launch and restart — perfect for a mission briefing delivered with <code>wait</code> timers. <code>on win</code> and <code>on lose</code> add a closing line before the end screens.</p>
+      <pre data-highlight>on start {
+    say "Grab the gem and every coin."
+    wait 3 {
+        say "Then find the vault door."
+    }
+}
+
+on win {
+    say "Vault cleared like a pro."
+}
+
+on lose {
+    say "The vault keeps its secrets."
+}</pre>
+      <p>That is the complete game. Reload, press Enter, and play it start to finish: grab the gem, sweep both coins, hear the vault unlock, dash past (or through) the sentinel, and escape through the portal. You have now touched every core concept in the language — blocks, items with handlers, enemy AI tuning, world rules and lifecycle events.</p>
+    </div>
+
+    <div class="tut-step" id="step-8">
+      <span class="tnum">8</span>
+      <h2 style="margin-top:6px;">The full listing</h2>
+      <p>Here is everything in one block to compare against — it is also <code>examples/vault-runner.votyer</code> in the repository, ready to paste into the <a href="playground.html">playground</a>:</p>
+      <pre data-highlight>game "Vault Runner" {
+    size 800 500
+    sky #14142a
+    floor #3a2c22
+    fog 0.5
+    speed 3.0
+}
+
+palette {
+    "1" #6d4a2f
+}
+
+map {
+    "###########"
+    "#P....1...#"
+    "#.###.###.#"
+    "#.#C...#c.#"
+    "#.#.###..S#"
+    "#...#.G.c.#"
+    "###########"
+}
+
+item "gem" {
+    char "C"      shape crystal
+    color #5eead4 value 50
+    glow on
+    on take {
+        score += 50
+        sound pickup
+        say "The vault gem! Now the coins."
+    }
+}
+
+item "coin" {
+    char "c"      shape orb
+    color #fbbf24 value 10
+    on take {
+        score += 10
+        sound blip
+    }
+}
+
+enemy "sentinel" {
+    char "S"      shape ghost
+    color #e2445c
+    speed 1.1     sight 5
+    hp 30         damage 20
+}
+
+exit {
+    char "G"
+    color #8b5cf6
+    locked on
+}
+
+rules {
+    on all items taken {
+        sound unlock
+        say "The vault door grinds open!"
+    }
+    on touch enemy {
+        shake 0.3
+        say "Ouch — watch the sentinels!"
+    }
+    on enemy dead  { score += 25 }
+    on reach exit  { win }
+}
+
+on start {
+    say "Grab the gem and every coin."
+    wait 3 { say "Then find the vault door." }
+}
+
+on win  { say "Vault cleared like a pro." }
+on lose { say "The vault keeps its secrets." }</pre>
+      <div class="callout"><b>Note.</b> Multiple properties on one line are fine — the parser only cares about tokens, not line breaks. Format your file however your team reads best.</div>
+    </div>
+
+    <h2 id="next" style="scroll-margin-top:84px;">Where to go next</h2>
+    <p>You have a working game — now make it yours. Some ideas ordered by difficulty: add a second sentinel with <code>shape robot</code> and <code>speed 2.0</code> for a real threat; give the gem a <code>spawn "sentinel" x y</code> ambush inside <code>on take</code>; build a bigger map with a palette story — rust outer ring, teal inner vault; or write an <code>on tick</code> pressure system that says something ominous every 30 seconds using <code>time</code> and <code>random</code>.</p>
+    <p>When you are ready for the full reference — every command, every shape, the JavaScript API — head to the <a href="docs.html">docs</a>. And if you build something fun, ship it: a votyer game is one HTML file, so GitHub Pages hosts it for free. Star or fork the <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">repository</a> if you want to follow the engine's progress.</p>
+  </main>
+</div>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-logo">votyer<span class="logo-js">.js</span></span>
+    <span>the next-gen language for retro HTML5 games</span>
+    <span class="footer-links">
+      <a href="index.html">Home</a> ·
+      <a href="docs.html">Docs</a> ·
+      <a href="playground.html">Playground</a> ·
+      <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
+    </span>
+  </div>
+</footer>
+
+<script src="votyer.js"></script>
+<script src="assets/highlight.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>
