@@ -82,6 +82,8 @@ No build step, no npm, no server needed — works from `file://`, GitHub Pages o
 
 - [`examples/vault-runner.votyer`](examples/vault-runner.votyer) — the tutorial game: gem, coins, sentinel, locked vault
 - [`examples/arena.votyer`](examples/arena.votyer) — combat sandbox showing `enemies left` and timed wins
+- [`examples/site-nova.e#`](examples/site-nova.e#) — a complete portfolio website in E#, with a votyer game embedded
+- [`examples/site-product.e#`](examples/site-product.e#) — a product landing page in E#
 
 ## The language in 30 seconds
 

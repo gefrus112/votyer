@@ -1,0 +1,73 @@
+// ============================================================
+//  site-nova.e# — a complete portfolio website in E#
+//  compile it in the playground (E# mode) or with ESharp.compile()
+// ============================================================
+site "Nova — Design Engineer" {
+
+  theme { accent #7c6cff  accent2 #22d3ee  bg #0b0d17  mode dark }
+
+  nav {
+    brand "NOVA"
+    link "Work" "#work"
+    link "Play" "#play"
+    cta "Hire me" "#contact"
+  }
+
+  hero {
+    kicker "DESIGN ENGINEER — PORTFOLIO"
+    title "I build products that feel alive."
+    sub "Interfaces, motion and real-time 3D for the modern web. Move your cursor through the galaxy."
+    button "See the work" "#work"
+    button "Play something" "#play"
+    galaxy on
+  }
+
+  features "What I do" {
+    item "Interfaces" "Design systems that scale with your team and survive contact with production."
+    item "Motion" "Micro-interactions that make products feel expensive."
+    item "Real-time 3D" "Interactive worlds that run in the browser — powered by votyer.js."
+  }
+
+  work "Selected work" {
+    project "Nebula" "Realtime analytics dashboard" #7c6cff #22d3ee
+    project "Orbit" "3D product configurator" #f472b6 #a78bfa
+    project "Pulse" "Mobile fitness companion" #34d399 #22d3ee
+    project "Atlas" "Design tokens platform" #fbbf24 #f472b6
+  }
+
+  stats {
+    stat "12+" "years crafting"
+    stat "80" "projects shipped"
+    stat "4.9" "client rating"
+  }
+
+  quote {
+    text "Nova ships polish you can feel. The site played a game before I read a word."
+    by "a very happy client"
+  }
+
+  game "Play a votyer mini-game right here" { preset water-temple }
+
+  code "This site is 60 lines of E#" {
+    title site-nova.e#
+    ```e#
+    site "Nova" {
+      hero {
+        title "I build products that feel alive."
+        galaxy on
+      }
+      features "What I do" {
+        item "Interfaces" "Design systems."
+      }
+      game { preset water-temple }
+    }
+    ```
+  }
+
+  contact "Let's build something" {
+    email hi@nova.dev
+    github https://github.com/gefrus112/votyer
+  }
+
+  footer { text "© 2026 Nova — built with E# and votyer.js" }
+}

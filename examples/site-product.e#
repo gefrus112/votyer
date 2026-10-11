@@ -1,0 +1,56 @@
+// ============================================================
+//  site-product.e# — a product landing page in E#
+//  shows the lighter, business side of the language
+// ============================================================
+site "Pulse — analytics that breathe" {
+
+  theme { accent #34d399  accent2 #22d3ee  bg #07090f  mode dark }
+
+  nav {
+    brand "PULSE"
+    link "Features" "#features"
+    link "Pricing" "#pricing"
+    cta "Start free" "#start"
+  }
+
+  hero {
+    kicker "REALTIME ANALYTICS"
+    title "Know your product is alive."
+    sub "Pulse streams every event into dashboards your whole team actually opens. No SQL degree required."
+    button "Start free" "#start"
+    button "See features" "#features"
+    galaxy on
+  }
+
+  features "Why teams switch" {
+    item "Live by default" "Every chart updates in real time. Refresh is a bug, not a feature."
+    item "Funnels in one click" "Drag events onto a canvas. Pulse writes the query."
+    item "Runs anywhere" "One script tag. Edge-fast. Your data stays yours."
+  }
+
+  stats {
+    stat "4.2B" "events / month"
+    stat "120ms" "median query"
+    stat "99.99%" "uptime"
+  }
+
+  quote {
+    text "We deleted 40 dashboards and kept one. It was Pulse."
+    by "Head of Product, Orbitscale"
+  }
+
+  code "Add Pulse to your site" {
+    title index.html
+    ```html
+    <script src="https://pulse.dev/p.js"
+            data-key="pk_live_51Hx"><\/script>
+    ```
+  }
+
+  contact "Start free — 1M events included" {
+    email hello@pulse.dev
+    github https://github.com/gefrus112/votyer
+  }
+
+  footer { text "© 2026 Pulse — crafted with E#" }
+}
