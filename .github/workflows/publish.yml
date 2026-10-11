@@ -1,0 +1,52 @@
+name: Publish Packages
+
+# Publishes @gefrus112/votyer and @gefrus112/esharp to GitHub Packages (npm registry).
+# Idempotent: skips a package if that exact version is already published.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+
+      - name: Publish @gefrus112/votyer
+        working-directory: packages/votyer
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@gefrus112/votyer@$VERSION" version >/dev/null 2>&1; then
+            echo "@gefrus112/votyer@$VERSION is already published — skipping."
+          else
+            npm publish
+            echo "Published @gefrus112/votyer@$VERSION"
+          fi
+
+      - name: Publish @gefrus112/esharp
+        working-directory: packages/esharp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@gefrus112/esharp@$VERSION" version >/dev/null 2>&1; then
+            echo "@gefrus112/esharp@$VERSION is already published — skipping."
+          else
+            npm publish
+            echo "Published @gefrus112/esharp@$VERSION"
+          fi

@@ -34,6 +34,7 @@
     <h4>Start here</h4>
     <a href="#introduction">Introduction</a>
     <a href="#getting-started">Getting started</a>
+    <a href="#npm-install">Install from GitHub Packages</a>
     <a href="#anatomy">Anatomy of a game</a>
     <h4>Language</h4>
     <a href="#game-block">The game block</a>
@@ -97,6 +98,17 @@ map {
 &lt;/html&gt;</pre>
     <p>The <code>data-canvas</code> attribute tells the engine which canvas to render into. If you omit it, the runtime creates a canvas for you right after the script tag and styles it responsively. That is all the HTML5 integration you need — the rest of the page can be a normal website, so games can live inside blog posts, landing pages or documentation exactly like the demo on this site does.</p>
     <div class="callout"><b>No server required.</b> Because there is no build step and no fetch at runtime, votyer games work from <code>file://</code>, from GitHub Pages, from any CDN, or even attached to an email as a single HTML file.</div>
+
+    <h3 id="npm-install">Install from GitHub Packages</h3>
+    <p>Both languages are also distributed as npm packages on <b>GitHub Packages</b>, published automatically on every release. Add a <code>.npmrc</code> beside your <code>package.json</code> pointing the <code>@gefrus112</code> scope at the registry (any GitHub token with <code>read:packages</code> works), then install with npm.</p>
+    <pre data-highlight>@gefrus112:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN</pre>
+    <pre data-highlight>npm install @gefrus112/votyer   # votyer.js — the game language
+npm install @gefrus112/esharp   # esharp.js — the site language</pre>
+    <p>In Node, the same files export their compiler APIs, which makes CI validation trivial: compile every <code>.votyer</code> and <code>.e#</code> file in your repo and fail the build on the first error. In the browser, point a <code>&lt;script src&gt;</code> at <code>node_modules/@gefrus112/votyer/votyer.js</code> and everything works exactly as shown above.</p>
+    <pre data-highlight>const Votyer = require('@gefrus112/votyer');
+const r = Votyer.compile(require('fs').readFileSync('game.votyer', 'utf8'));
+if (!r.ok) { console.error(r.errors.join('\n')); process.exit(1); }</pre>
 
     <!-- ==================== ANATOMY ==================== -->
     <h2 id="anatomy"><span class="hanchor">§</span>Anatomy of a game</h2>

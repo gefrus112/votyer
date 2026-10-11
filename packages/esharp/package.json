@@ -1,0 +1,29 @@
+{
+  "name": "@gefrus112/esharp",
+  "version": "1.2.0",
+  "description": "E# (.e#) — the site-building language that combines markup, styling and interactivity into one. Compiles complete standalone, responsive HTML pages with built-in galaxy effects and game embeds.",
+  "main": "esharp.js",
+  "files": [
+    "esharp.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "programming-language",
+    "site-builder",
+    "templating",
+    "html",
+    "css",
+    "javascript",
+    "dsl",
+    "static-site"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gefrus112/votyer.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

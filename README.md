@@ -48,7 +48,7 @@ on start { say "Swim the temple. Reach the portal." }
 </script>
 ```
 
-## Highlights (v1.1 — the Water & Light update)
+## Highlights (v1.2 — GitHub Packages release)
 
 - **A real language** — lexer, parser and interpreter (`Votyer.compile`) with line-numbered error reporting, `if/else`, `let`, `repeat`, `wait`, expressions and string concatenation
 - **Animated water** — per-pixel wave displacement, sky reflections, specular shimmer and ripple bands in the floor caster; splash sound, drag physics, underwater tint, `on enter/exit water` rules
@@ -116,13 +116,54 @@ site "Nova — Design Engineer" {
 }
 ```
 
+## Install via GitHub Packages
+
+Both languages ship as npm packages on **GitHub Packages** — published automatically by GitHub Actions on every release:
+
+| Package | Installs | What you get |
+|---|---|---|
+| [`@gefrus112/votyer`](https://github.com/gefrus112/votyer/pkgs/npm/%40gefrus112%2Fvotyer) | `votyer.js` | language + raycasting engine |
+| [`@gefrus112/esharp`](https://github.com/gefrus112/votyer/pkgs/npm/%40gefrus112%2Fesharp) | `esharp.js` | E# site-building language |
+
+**1.** Put this `.npmrc` next to your `package.json` (token needs `read:packages`):
+
+```ini
+@gefrus112:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+```
+
+**2.** Install:
+
+```bash
+npm install @gefrus112/votyer   # votyer.js — the game language
+npm install @gefrus112/esharp   # esharp.js — the web language
+```
+
+**3.** Use it in Node (tooling / CI) or the browser (render games / compile pages):
+
+```js
+const Votyer = require('@gefrus112/votyer');
+const result = Votyer.compile(source);      // { ok, spec, ast, errors }
+
+const ESharp = require('@gefrus112/esharp');
+const page   = ESharp.compile(siteSource);  // { ok, html, errors }
+```
+
+CI validation is a two-liner — fail the build if a game stops compiling:
+
+```bash
+node -e "const r=require('@gefrus112/votyer').compile(require('fs').readFileSync('game.votyer','utf8')); process.exit(r.ok?0:1)"
+```
+
+The publish pipeline lives in [`.github/workflows/publish.yml`](.github/workflows/publish.yml) — triggered on every GitHub Release, idempotent (skips versions already on the registry).
+
 ## JavaScript API
 
 ```js
 const result = Votyer.compile(source);     // { ok, spec, ast, errors }
 const game   = Votyer.run(source, canvas); // boots a live engine
 game.destroy();                            // stop it cleanly
-Votyer.version;                            // "1.1.0"
+Votyer.version;                            // "1.2.0"
 Votyer.spritePreview(canvas, 'crystal', '#5eead4', true); // draw any shape
 
 const site = ESharp.compile(esharpSource); // { ok, html, errors }

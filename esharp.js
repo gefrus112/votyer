@@ -25,7 +25,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
   var VOTYER_CDN = 'https://gefrus112.github.io/votyer/votyer.js';
 
   function EError(msg, line) {
