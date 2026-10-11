@@ -21,14 +21,18 @@
     });
   }
 
-  // syntax-highlight any element carrying data-highlight
+  // syntax-highlight any element carrying data-highlight (data-lang="esharp" switches languages)
   function highlightAll() {
     if (typeof window.VotyerHighlight !== 'function') return;
     var els = document.querySelectorAll('[data-highlight]');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       var raw = el.getAttribute('data-highlight-src') || el.textContent;
-      el.innerHTML = window.VotyerHighlight(raw.replace(/^\n+/, ''));
+      raw = raw.replace(/^\n+/, '');
+      var fn = el.getAttribute('data-lang') === 'esharp' && typeof window.ESharpHighlight === 'function'
+        ? window.ESharpHighlight
+        : window.VotyerHighlight;
+      el.innerHTML = fn(raw);
     }
   }
 

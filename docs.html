@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Docs — votyer.js</title>
 <meta name="description" content="The complete votyer.js language reference: game blocks, maps, items, enemies, rules, events, commands and the embedding API.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -15,11 +15,12 @@
     <a class="logo" href="index.html">
       <span class="logo-mark"></span>
       <span class="logo-text">votyer<span class="logo-js">.js</span></span>
-      <span class="logo-badge">v1.0</span>
+      <span class="logo-badge">v1.1</span>
     </a>
     <div class="nav-links" id="nav-links">
       <a href="docs.html" class="active">Docs</a>
       <a href="tutorial.html">Tutorial</a>
+      <a href="sprites.html">Sprites</a>
       <a href="playground.html">Playground</a>
       <a href="votyer.html">Demo</a>
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
@@ -37,6 +38,8 @@
     <h4>Language</h4>
     <a href="#game-block">The game block</a>
     <a href="#map">Maps &amp; palettes</a>
+    <a href="#water">Water &amp; liquids</a>
+    <a href="#lights">Lighting &amp; sky</a>
     <a href="#items">Items</a>
     <a href="#enemies">Enemies</a>
     <a href="#exit">The exit</a>
@@ -49,12 +52,13 @@
     <a href="#sounds">Sounds</a>
     <a href="#controls">Player controls</a>
     <h4>Advanced</h4>
+    <a href="#esharp">E# for websites</a>
     <a href="#api">JavaScript API</a>
     <a href="#faq">FAQ</a>
   </aside>
 
   <main class="content">
-    <span class="pill">Reference — votyer v1.0</span>
+    <span class="pill">Reference — votyer v1.1 · water &amp; light</span>
     <h1>Language documentation</h1>
     <p>Everything the votyer language can do, in one page. votyer is a small, readable language that compiles in the browser into a running retro 3D game. If you have ever written a config file, you can write votyer — and if you have ever written JavaScript, you will feel at home in its handlers.</p>
 
@@ -117,22 +121,28 @@ on tick  { ... }</pre>
     sky #101426         // ceiling color
     floor #3d2b1f       // floor color
     fog 0.45            // 0 = clear view, 1 = claustrophobic
+    fogcolor #0d1524    // new in 1.1 — atmosphere color
     speed 3.2           // player speed, tiles per second
     turn 2.8            // keyboard turn speed, radians per second
     fov 68              // field of view in degrees
     sensitivity 0.0022  // mouse look sensitivity
     minimap on          // show the minimap (toggle with M)
-    texture on          // retro brick shading on walls
+    texture on          // textured walls (off = flat retro shading)
+    ceiling off         // new in 1.1 — open sky + stars
+    detail 0.7          // new in 1.1 — render detail, 0.3 to 1
 }</pre>
     <table>
       <tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
       <tr><td><code>size</code></td><td>800 500</td><td>Internal render resolution. The canvas scales to fit its container while keeping the chunky retro pixels.</td></tr>
       <tr><td><code>sky</code> / <code>floor</code></td><td>night blue / dirt brown</td><td>Colors of the ceiling and floor bands. Accepts <code>#rgb</code> or <code>#rrggbb</code> hex colors, with or without quotes.</td></tr>
       <tr><td><code>fog</code></td><td>0.4</td><td>How quickly walls fade into darkness with distance. Higher values shorten the view distance for a moodier dungeon.</td></tr>
+      <tr><td><code>fogcolor</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>the sky color</td><td>The color distance fades into. Set it slightly darker than <code>sky</code> for caves, or bright blue for open-air maps.</td></tr>
       <tr><td><code>speed</code></td><td>3.0</td><td>Player movement speed in tiles per second.</td></tr>
       <tr><td><code>turn</code></td><td>2.6</td><td>Turning speed for the arrow keys, in radians per second.</td></tr>
       <tr><td><code>fov</code></td><td>66</td><td>Horizontal field of view. Classic Wolfenstein-style values sit between 60 and 75.</td></tr>
-      <tr><td><code>minimap</code> / <code>texture</code></td><td>on</td><td>Turn the HUD minimap or the brick wall shading on or off.</td></tr>
+      <tr><td><code>minimap</code> / <code>texture</code></td><td>on</td><td>Turn the HUD minimap or the textured-wall renderer on or off. <code>texture off</code> falls back to fast flat-color shading.</td></tr>
+      <tr><td><code>ceiling</code> / <code>stars</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>on</td><td><code>ceiling off</code> replaces the ceiling with a gradient sky and a twinkling starfield (parallax by view angle). <code>stars off</code> removes just the stars.</td></tr>
+      <tr><td><code>detail</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>0.62</td><td>Internal render resolution from <code>0.3</code> (fastest, chunky) to <code>1</code> (native, sharpest). The 3D view is rendered to a framebuffer and upscaled, so lower values run faster on weak hardware.</td></tr>
     </table>
 
     <!-- ==================== MAP ==================== -->
@@ -161,6 +171,62 @@ map {
     "#########"
 }</pre>
     <div class="callout warn"><b>Design tip.</b> Rows may be different lengths — short rows are padded with floor — but the outer border must be sealed with walls, otherwise rays escape the world. The engine clamps out-of-bounds rays, so a leaky border looks odd rather than crashing. The tutorial ships a checker; steal it.</div>
+
+    <!-- ==================== WATER ==================== -->
+    <h2 id="water"><span class="hanchor">§</span>Water &amp; liquids <span class="pill" style="font-size:11px;padding:3px 10px;vertical-align:middle;">new in 1.1</span></h2>
+    <p>Water is the flagship feature of v1.1. Declare a <code>water</code> block, then paint tiles with <code>~</code> in the map. Water cells are fully walkable — the renderer draws them as a second surface with animated wave displacement, sky reflections that strengthen with distance, moving specular highlights and gentle ripple bands, all computed per pixel inside the floor-casting pipeline. No extra assets, no extra setup.</p>
+    <pre data-highlight>water {
+    color #1a6f92     // the body of the liquid
+    wave 0.55         // 0 = glass flat, 1 = rough sea
+    reflect 0.7       // how much sky it mirrors
+}
+
+map {
+    "############"
+    "#P...~~....#"
+    "#.##.~~.##.#"
+    "#...C~~....#"
+    "############"
+}</pre>
+    <table>
+      <tr><th>Property</th><th>Default</th><th>What it does</th></tr>
+      <tr><td><code>color</code></td><td>#1a6f92</td><td>The deep-water tint. Everything under the surface blends toward this color.</td></tr>
+      <tr><td><code>wave</code></td><td>0.5</td><td>Swell amplitude — how aggressively the sample coordinates are displaced each frame.</td></tr>
+      <tr><td><code>reflect</code></td><td>0.65</td><td>Sky reflection strength. Far tiles mirror the sky and fog color more strongly, like real grazing-angle water.</td></tr>
+    </table>
+    <p>Water is not just visual — it is physical and scriptable. Wading in slows the player to 55% speed, plays the <code>splash</code> sound, adds a small camera nudge, tints the screen blue while you swim, and fires two world rules you can hook:</p>
+    <pre data-highlight>rules {
+    on enter water {
+        sound splash
+        say "The water is warm and slow."
+    }
+    on exit water {
+        say "Back on dry stone."
+    }
+}</pre>
+    <div class="callout"><b>Design tip.</b> A moat around the exit, a flooded basement, a river the enemies won't follow you across (they can — but you're faster on land) — water reads as both beauty and gameplay. Pair it with <code>ceiling off</code> so the surface has a sky to reflect.</div>
+
+    <!-- ==================== LIGHTS ==================== -->
+    <h2 id="lights"><span class="hanchor">§</span>Lighting &amp; sky <span class="pill" style="font-size:11px;padding:3px 10px;vertical-align:middle;">new in 1.1</span></h2>
+    <p>v1.1 replaces the old flat-distance shading with a real lighting pass. Every pixel of wall and floor is lit by up to six nearby <b>light sources</b>, each with distance falloff and per-source color. The player always carries a soft warm lamp, and any sprite with <code>glow on</code> becomes a light: torches, crystals, glowing enemies, the exit portal itself.</p>
+    <pre data-highlight>item "torch" {
+    char "t"
+    shape torch
+    color #ff9f43
+    pickup off     // decor: never picked up
+    glow on        // emits light with a flame flicker
+}</pre>
+    <p>Light is <b>flickering</b> — each source pulses on its own offset sine, so a corridor of torches breathes instead of humming flatly. The <code>pickup off</code> property (new in 1.1) turns any item into pure decor: it stays in the world, ignores the player, and still lights the room. Barrels, mushrooms and skulls love this too.</p>
+    <p>Two game settings complete the atmosphere kit. <code>fogcolor</code> tints the distance haze separately from the sky, and <code>ceiling off</code> swaps the ceiling for an open gradient sky with a parallax starfield — the sun never sets in a votyer game, but the stars do twinkle:</p>
+    <pre data-highlight>game "Surface Outpost" {
+    size 960 560
+    sky #0b1026
+    fog 0.4
+    fogcolor #0d1524
+    ceiling off     // open sky + stars
+    stars on        // twinkle (default on)
+}</pre>
+    <div class="callout"><b>Performance note.</b> Lighting is computed per wall column and per floor block, not per pixel — it stays fast even on modest hardware. If you need more headroom, lower <code>detail</code> before you remove torches.</div>
 
     <!-- ==================== ITEMS ==================== -->
     <h2 id="items"><span class="hanchor">§</span>Items</h2>
@@ -239,6 +305,8 @@ map {
         shake 0.4
         say "Keep away from me!"
     }
+    on enter water { sound splash }
+    on exit water  { say "Drip." }
     on reach exit  { win }
     on bump wall   { say "That is a wall." }
     on enemy dead  { score += 50 }
@@ -250,6 +318,8 @@ map {
       <tr><td><code>on reach exit</code></td><td>The player steps into an <b>unlocked</b> exit portal.</td></tr>
       <tr><td><code>on bump wall</code></td><td>The player walks into a wall (once per second at most).</td></tr>
       <tr><td><code>on enemy dead</code></td><td>An enemy loses its last hit point.</td></tr>
+      <tr><td><code>on enter water</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>The player steps onto a <code>~</code> tile from dry land.</td></tr>
+      <tr><td><code>on exit water</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>The player steps off a <code>~</code> tile back onto floor.</td></tr>
     </table>
 
     <!-- ==================== EVENTS ==================== -->
@@ -320,18 +390,26 @@ wait 2 { say "Two seconds later..." }</pre>
 
     <!-- ==================== SHAPES ==================== -->
     <h2 id="shapes"><span class="hanchor">§</span>Sprite shapes</h2>
-    <p>Sprites are drawn procedurally at boot — no image files, no loading, crisp at every resolution. Any shape works for items or enemies, so a "crystal golem" made of <code>shape crystal</code> enemies is completely legal and honestly a great idea:</p>
+    <p>Sprites are drawn procedurally at boot — no image files, no loading, crisp at every resolution. Any shape works for items or enemies, so a "crystal golem" made of <code>shape crystal</code> enemies is completely legal and honestly a great idea. Every shape on this page is shown live — drawn by the engine itself — in the <a href="sprites.html">sprite gallery</a>:</p>
     <table>
       <tr><th>Shape</th><th>Look</th><th>Good for</th></tr>
       <tr><td><code>crystal</code></td><td>Faceted diamond with a highlight</td><td>gems, quest items, golems</td></tr>
       <tr><td><code>orb</code></td><td>Soft radial sphere</td><td>medkits, energy, potions</td></tr>
+      <tr><td><code>coin</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>Gold coin with an inner ring</td><td>small treasure</td></tr>
       <tr><td><code>star</code></td><td>Five-point star</td><td>bonuses, collectathons</td></tr>
+      <tr><td><code>key</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>Ornate skeleton key</td><td>doors, secrets</td></tr>
+      <tr><td><code>potion</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>Glass flask with liquid</td><td>heals, buffs</td></tr>
+      <tr><td><code>sword</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>Steel blade with a gold pommel</td><td>weapon pickups</td></tr>
       <tr><td><code>chest</code></td><td>Wooden chest with a gold lock</td><td>treasure, checkpoints</td></tr>
+      <tr><td><code>torch</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>Wooden torch with a flame</td><td>light sources, decor</td></tr>
+      <tr><td><code>barrel</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>Iron-banded barrel</td><td>solid dressing</td></tr>
+      <tr><td><code>mushroom</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>Spotted cave mushroom</td><td>ambience</td></tr>
       <tr><td><code>ghost</code></td><td>Wavy-bottom spook with eyes</td><td>classic patrollers</td></tr>
       <tr><td><code>robot</code></td><td>Boxy droid with antennae</td><td>fast hunters</td></tr>
       <tr><td><code>blob</code></td><td>Round creature with eyes</td><td>slow swarms</td></tr>
       <tr><td><code>skull</code></td><td>Grinning skull</td><td>dread, boss arenas</td></tr>
     </table>
+    <p>Two properties shape how sprites behave in the scene. <code>glow on</code> makes the sprite emit light into the v1.1 lighting pass and draw with a soft halo. <code>pickup off</code> (items only) turns it into pure decor that never triggers pickup — perfect for torches, barrels and mushrooms placed purely for atmosphere.</p>
 
     <!-- ==================== SOUNDS ==================== -->
     <h2 id="sounds"><span class="hanchor">§</span>Sounds</h2>
@@ -346,6 +424,9 @@ wait 2 { say "Two seconds later..." }</pre>
       <tr><td><code>kill</code></td><td>long descending boom</td></tr>
       <tr><td><code>unlock</code></td><td>three ascending chimes</td></tr>
       <tr><td><code>denied</code></td><td>double buzz</td></tr>
+      <tr><td><code>splash</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>filtered noise burst — water entry</td></tr>
+      <tr><td><code>heal</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>soft rising two-note chime</td></tr>
+      <tr><td><code>zap</code> <span class="pill" style="font-size:10px;padding:2px 8px;">1.1</span></td><td>electric sawtooth snap</td></tr>
       <tr><td><code>win</code></td><td>four-note victory fanfare</td></tr>
       <tr><td><code>lose</code></td><td>sad descending phrase</td></tr>
     </table>
@@ -391,6 +472,42 @@ Votyer.sounds;          // ["blip", "pickup", ...]</pre>
     <p>If compilation fails, <code>Votyer.run</code> draws the error message directly onto the target canvas — with line and column numbers — so players and you see what went wrong even with the console closed. A failed run returns an object with an <code>errors</code> array instead of an engine.</p>
 
     <!-- ==================== FAQ ==================== -->
+    <!-- ==================== E# ==================== -->
+    <h2 id="esharp"><span class="hanchor">§</span>E# for websites <span class="pill" style="font-size:11px;padding:3px 10px;vertical-align:middle;">new in 1.1</span></h2>
+    <p>votyer builds games. Its sibling language <b>E#</b> (files end in <code>.e#</code>) builds <b>websites</b> — complete, polished, responsive HTML pages compiled from a few readable lines. E# and votyer are designed as a family: an E# page can embed a live votyer game as one section, so your landing page and your game ship together, in the same tooling, with zero build steps.</p>
+    <p>Drop <code>esharp.js</code> on your page (next to <code>votyer.js</code>), then write E# inside a <code>&lt;script type="text/esharp"&gt;</code> tag with a <code>data-target</code> pointing at an iframe — the compiled site is rendered into it. Or call <code>ESharp.compile(src)</code> from JavaScript and do whatever you like with the output HTML string.</p>
+    <pre data-highlight data-lang="esharp">&lt;script src="esharp.js"&gt;&lt;/script&gt;
+
+&lt;iframe id="preview" style="width:100%;height:640px"&gt;&lt;/iframe&gt;
+
+&lt;script type="text/esharp" data-target="#preview"&gt;
+site "Nova — Design Engineer" {
+    theme { accent #7c6cff  bg #0b0d17 }
+    hero {
+        title "I build products that feel alive."
+        galaxy on
+    }
+}
+&lt;/script&gt;</pre>
+    <h3>How an E# file is shaped</h3>
+    <p>Every file starts with <code>site "Title" {</code> and contains <b>sections</b>. A section is a name, an optional label, and a block of <code>key value</code> lines. Values are quoted strings, <code>#hex</code> colors, numbers or bare words. Repeat a key to make a list — three <code>link</code> lines make three nav links. One-line sections like <code>theme { ... }</code> are legal when they fit.</p>
+    <table>
+      <tr><th>Section</th><th>What it renders</th><th>Key lines</th></tr>
+      <tr><td><code>theme</code></td><td>Design tokens for the whole page</td><td><code>accent</code>, <code>accent2</code>, <code>bg</code>, <code>mode dark|light</code>, <code>font</code></td></tr>
+      <tr><td><code>nav</code></td><td>Fixed glass navigation bar</td><td><code>brand</code>, repeated <code>link "Text" "#target"</code>, <code>cta "Label" "#target"</code></td></tr>
+      <tr><td><code>hero</code></td><td>Full-height hero with gradient headline</td><td><code>kicker</code>, <code>title</code>, <code>sub</code>, repeated <code>button</code>, <code>galaxy on|off</code></td></tr>
+      <tr><td><code>features</code></td><td>Responsive card grid</td><td>repeated <code>item "Title" "Body text"</code></td></tr>
+      <tr><td><code>work</code></td><td>Gradient project cards</td><td>repeated <code>project "Name" "Desc" #c1 #c2</code></td></tr>
+      <tr><td><code>stats</code></td><td>Stats band</td><td>repeated <code>stat "12+" "years crafting"</code></td></tr>
+      <tr><td><code>quote</code></td><td>Centered testimonial</td><td><code>text</code>, <code>by</code></td></tr>
+      <tr><td><code>game</code></td><td><b>A live votyer game, embedded</b></td><td><code>preset water-temple|crystal-quest</code> or a ```votyer fence</td></tr>
+      <tr><td><code>code</code></td><td>Highlighted code window</td><td><code>title filename</code> plus a <code>```lang</code> fenced block</td></tr>
+      <tr><td><code>contact</code></td><td>Contact buttons</td><td><code>email</code>, <code>github</code>, <code>linkedin</code>, <code>twitter</code>, <code>web</code>, <code>button</code></td></tr>
+      <tr><td><code>footer</code></td><td>Footer strip</td><td><code>text</code></td></tr>
+    </table>
+    <p>The <code>galaxy on</code> hero flag embeds a self-contained spiral-galaxy particle background with the same follow-and-spread mouse physics as the votyer site — no external scripts needed. Compiled output includes responsive design, scroll-reveal animations, smooth anchor scrolling and Open Graph meta tags automatically.</p>
+    <div class="callout"><b>Try it now.</b> Open the <a href="playground.html">playground</a>, flip the switch to <b>E#</b>, and compile the portfolio preset. The Share button gives you a permanent URL for any E# site or votyer game you build.</div>
+
     <h2 id="faq"><span class="hanchor">§</span>FAQ</h2>
     <h3>Is this really 3D?</h3>
     <p>It is true first-person 3D rendering using the classic <b>raycasting</b> technique — the same family of math that powered Wolfenstein 3D. The world is flat, but corridors, depth, sprites and fog are rendered in genuine perspective, column by column, at 60 fps.</p>
@@ -412,6 +529,7 @@ Votyer.sounds;          // ["blip", "pickup", ...]</pre>
     <span class="footer-links">
       <a href="index.html">Home</a> ·
       <a href="tutorial.html">Tutorial</a> ·
+      <a href="sprites.html">Sprites</a> ·
       <a href="playground.html">Playground</a> ·
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
     </span>

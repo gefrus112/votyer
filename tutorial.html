@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tutorial — your first votyer game in 10 minutes</title>
 <meta name="description" content="Step-by-step tutorial: build a complete retro raycasting game with votyer.js — map, items, enemies, rules and events.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -15,11 +15,12 @@
     <a class="logo" href="index.html">
       <span class="logo-mark"></span>
       <span class="logo-text">votyer<span class="logo-js">.js</span></span>
-      <span class="logo-badge">v1.0</span>
+      <span class="logo-badge">v1.1</span>
     </a>
     <div class="nav-links" id="nav-links">
       <a href="docs.html">Docs</a>
       <a href="tutorial.html" class="active">Tutorial</a>
+      <a href="sprites.html">Sprites</a>
       <a href="playground.html">Playground</a>
       <a href="votyer.html">Demo</a>
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
@@ -40,6 +41,7 @@
     <a href="#step-7">7. Events &amp; hints</a>
     <a href="#step-8">8. Full listing</a>
     <h4>Then</h4>
+    <a href="#water">Bonus: water &amp; light</a>
     <a href="#next">Where to go next</a>
   </aside>
 
@@ -290,6 +292,35 @@ on lose { say "The vault keeps its secrets." }</pre>
       <div class="callout"><b>Note.</b> Multiple properties on one line are fine — the parser only cares about tokens, not line breaks. Format your file however your team reads best.</div>
     </div>
 
+    <div class="tut-step" id="water">
+      <span class="tnum">+</span>
+      <h2 style="margin-top:6px;">Bonus: water &amp; light (v1.1)</h2>
+      <p>The v1.1 engine added the two features that make maps feel alive: <b>animated water</b> and <b>dynamic lights</b>. Both are one declaration away from the game you just built. Add a <code>water</code> block next to your palette, then flood a corridor with <code>~</code> tiles:</p>
+      <pre data-highlight>water {
+    color #1a6f92
+    wave 0.55
+    reflect 0.7
+}
+
+map {
+    "###########"
+    "#P...~~...#"   // ~ tiles become animated water
+    "#.##.~~.#.#"
+    "#...C~~..G#"
+    "###########"
+}</pre>
+      <p>Water tiles are walkable but slow you to 55% speed, splash when you enter, and tint the screen while you swim. They also come with two new rules — <code>on enter water</code> and <code>on exit water</code> — so you can script currents, warnings or a hidden trigger only swimmers can reach.</p>
+      <p>Lighting works the same way: give any item <code>glow on</code> and it becomes a real light source in the renderer. The classic recipe is torches — decor items that never get picked up:</p>
+      <pre data-highlight>item "torch" {
+    char "t"
+    shape torch
+    color #ff9f43
+    pickup off   // decor: stays in the world
+    glow on      // flickering warm light
+}</pre>
+      <p>Finally, try <code>ceiling off</code> inside your <code>game</code> block: the dungeon opens to a gradient night sky with a twinkling starfield, and the water gets a sky to reflect. Combine all three — open sky, a water channel, a torch-lit hall — and your tutorial dungeon starts looking suspiciously like a real game. Paste any of these into the <a href="playground.html">playground</a> to see them in ten seconds.</p>
+    </div>
+
     <h2 id="next" style="scroll-margin-top:84px;">Where to go next</h2>
     <p>You have a working game — now make it yours. Some ideas ordered by difficulty: add a second sentinel with <code>shape robot</code> and <code>speed 2.0</code> for a real threat; give the gem a <code>spawn "sentinel" x y</code> ambush inside <code>on take</code>; build a bigger map with a palette story — rust outer ring, teal inner vault; or write an <code>on tick</code> pressure system that says something ominous every 30 seconds using <code>time</code> and <code>random</code>.</p>
     <p>When you are ready for the full reference — every command, every shape, the JavaScript API — head to the <a href="docs.html">docs</a>. And if you build something fun, ship it: a votyer game is one HTML file, so GitHub Pages hosts it for free. Star or fork the <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">repository</a> if you want to follow the engine's progress.</p>
@@ -303,6 +334,7 @@ on lose { say "The vault keeps its secrets." }</pre>
     <span class="footer-links">
       <a href="index.html">Home</a> ·
       <a href="docs.html">Docs</a> ·
+      <a href="sprites.html">Sprites</a> ·
       <a href="playground.html">Playground</a> ·
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
     </span>

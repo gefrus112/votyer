@@ -4,11 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>votyer.js — The HTML5 Retro Game Language</title>
-<meta name="description" content="votyer.js is a new programming language for building retro 3D raycasting games in HTML5. One script tag, zero dependencies — raycasting engine, sprites, items, enemy AI, audio synth and physics built in.">
+<meta name="description" content="votyer.js v1.1 — a new programming language for building retro 3D raycasting games in HTML5. Animated water, dynamic lights, textured walls, sprites, audio, physics. Plus E#: a second language that builds entire websites. One script tag, zero dependencies.">
 <meta property="og:title" content="votyer.js — The HTML5 Retro Game Language">
-<meta property="og:description" content="Write retro 3D games in a tiny new language. One script tag. Zero dependencies.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<meta property="og:description" content="Water, lights, raycasting. Write retro 3D games in a tiny new language — and build whole websites in E#.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
+<style>
+.wl-band{display:grid;grid-template-columns:1.05fr 1fr;gap:34px;align-items:center;max-width:1120px;margin:0 auto;padding:0 24px}
+.wl-copy h2{font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-0.01em;line-height:1.1}
+.wl-copy p{color:var(--dim);margin:18px 0 22px;font-size:16px;max-width:520px}
+.wl-list{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin:0 0 26px;padding:0;list-style:none}
+.wl-list li{font-size:14px;color:var(--dim)}
+.wl-list b{color:var(--text)}
+.sprite-strip{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:30px}
+.sprite-chip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px 10px;text-align:center;transition:transform .18s ease,border-color .18s ease}
+.sprite-chip:hover{transform:translateY(-4px);border-color:rgba(94,234,212,.4)}
+.sprite-chip canvas{width:64px;height:64px;display:block;margin:0 auto 6px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.45))}
+.sprite-chip span{font-size:11px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+.esharp-card{max-width:980px;margin:0 auto;background:linear-gradient(140deg,rgba(124,108,255,0.14),rgba(34,211,238,0.07) 55%,transparent);border:1px solid rgba(124,108,255,0.35);border-radius:22px;padding:44px 40px;display:grid;grid-template-columns:1.2fr 1fr;gap:36px;align-items:center}
+.esharp-card h2{font-size:clamp(24px,3.4vw,34px);font-weight:800;line-height:1.15}
+.esharp-card p{color:var(--dim);margin:14px 0 24px;font-size:15.5px}
+.tag-v11{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.18em;color:#06131a;background:linear-gradient(120deg,#5eead4,#8b5cf6);border-radius:99px;padding:7px 16px}
+@media(max-width:860px){.wl-band{grid-template-columns:1fr}.esharp-card{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 
@@ -17,11 +35,12 @@
     <a class="logo" href="index.html">
       <span class="logo-mark"></span>
       <span class="logo-text">votyer<span class="logo-js">.js</span></span>
-      <span class="logo-badge">v1.0</span>
+      <span class="logo-badge">v1.1</span>
     </a>
     <div class="nav-links" id="nav-links">
       <a href="docs.html">Docs</a>
       <a href="tutorial.html">Tutorial</a>
+      <a href="sprites.html">Sprites</a>
       <a href="playground.html">Playground</a>
       <a href="votyer.html">Demo</a>
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
@@ -30,156 +49,176 @@
   </div>
 </nav>
 
-<!-- ================= HERO — interactive galaxy ================= -->
+<!-- ================= HERO ================= -->
 <header class="hero">
   <canvas class="galaxy-bg" aria-hidden="true"></canvas>
   <div class="hero-inner">
-    <div class="hero-kicker"><span class="dot"></span> MOVE YOUR MOUSE — THE GALAXY FOLLOWS</div>
+    <span class="tag-v11">V1.1 — THE WATER &amp; LIGHT UPDATE</span>
     <h1 class="wordmark">votyer<span class="wm-js">.js</span></h1>
     <p class="hero-tagline">The HTML5 Retro Game Language</p>
     <p class="hero-sub">
-      A tiny new programming language that compiles straight into a <b>retro 3D raycasting engine</b>.
-      Sprites, items, enemy AI, audio, physics and menus — all built in. One script tag, <b>zero dependencies</b>.
+      A tiny language that compiles straight into a <b>retro 3D raycasting engine</b> — now with
+      <b style="color:#67e8f9">animated water</b>, <b style="color:#ffd166">dynamic lights</b> and textured walls.
+      Sprites, audio, physics, menus — built in. And with <b style="color:#a78bfa">E#</b>, the same family of
+      languages builds entire websites. One script tag, <b>zero dependencies</b>.
     </p>
     <div class="hero-ctas">
-      <a class="btn btn-primary" href="docs.html">Get started <span class="arr">→</span></a>
+      <a class="btn btn-primary" href="playground.html">Open the playground <span class="arr">→</span></a>
       <a class="btn btn-ghost" href="votyer.html">Play the demo <span class="arr">→</span></a>
+      <a class="btn btn-ghost" href="docs.html">Read the docs <span class="arr">→</span></a>
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><b>1 file</b><span>entire runtime</span></div>
       <div class="hero-stat"><b>0 deps</b><span>pure html5</span></div>
-      <div class="hero-stat"><b>~20 KB</b><span>gzipped engine</span></div>
-      <div class="hero-stat"><b>60 fps</b><span>raycast renderer</span></div>
+      <div class="hero-stat"><b>2 langs</b><span>games + sites</span></div>
+      <div class="hero-stat"><b>60 fps</b><span>water &amp; lights</span></div>
     </div>
   </div>
   <div class="scroll-hint">scroll</div>
 </header>
 
-<!-- ================= WHY ================= -->
+<!-- ================= WATER & LIGHT ================= -->
 <section class="section">
-  <div class="grid-3">
-    <div style="grid-column: span 2;">
-      <div class="code-window reveal">
+  <div class="wl-band">
+    <div class="wl-copy reveal">
+      <h2>Water that <span class="grad">actually flows</span></h2>
+      <p>Drop a <code>water</code> block and mark tiles with <code>~</code>. The engine renders animated waves,
+      sky reflections and moving specular highlights into the floor casting pipeline — then slows you down,
+      splashes, and tints the screen while you swim. Torches, crystals and glowing enemies cast real flickering
+      light onto every wall and floor pixel.</p>
+      <ul class="wl-list">
+        <li><b>wave</b> — swell amplitude</li>
+        <li><b>reflect</b> — sky reflection</li>
+        <li><b>fogcolor</b> — atmospheric tint</li>
+        <li><b>ceiling off</b> — open sky + stars</li>
+        <li><b>detail</b> — render resolution</li>
+        <li><b>glow on</b> — light-emitting sprites</li>
+      </ul>
+      <a class="btn btn-primary btn-sm" href="playground.html">Try the Water Temple preset <span class="arr">→</span></a>
+    </div>
+    <div class="reveal">
+      <div class="code-window">
         <div class="code-window-head">
           <span class="cdot cd1"></span><span class="cdot cd2"></span><span class="cdot cd3"></span>
-          <span class="cfile">my-game.html — a complete votyer game</span>
+          <span class="cfile">water-temple.votyer</span>
         </div>
-        <pre data-highlight>&lt;script src="votyer.js"&gt;&lt;/script&gt;
-&lt;script type="text/votyer"&gt;
-game "Star Vault" {
-    size 960 540
-    sky #101426
-    fog 0.5
+        <pre data-highlight>water {
+    color #1a6f92
+    wave 0.55
+    reflect 0.7
 }
 
-map {
-    "############"
-    "#P...#.....#"
-    "#.#C.#.###.#"
-    "#...#.G.#..#"
-    "############"
-}
-
-item "gem" {
-    char "C"
-    shape crystal
-    color #5eead4
-    on take {
-        score += 50
-        sound pickup
-        say "Gem secured!"
-    }
+item "torch" {
+    char "t"
+    shape torch
+    color #ff9f43
+    pickup off   // decor, stays put
+    glow on      // emits real light
 }
 
 rules {
+    on enter water { sound splash }
     on all items taken { unlock exit }
-    on reach exit      { win }
-}
-
-on start { say "Find the gem. Reach the portal." }
-&lt;/script&gt;</pre>
+    on reach exit { win }
+}</pre>
       </div>
-    </div>
-    <div class="reveal">
-      <h2 class="section-title" style="font-size:30px;">A game is<br><span class="grad">a script tag</span></h2>
-      <p class="section-sub" style="margin-bottom:22px;">
-        No build step. No npm. No boilerplate. Drop <code style="color:var(--mint)">votyer.js</code> into any HTML5 page,
-        write your world in the votyer language, and the engine compiles it live in the browser.
-      </p>
-      <p class="section-sub" style="margin-bottom:22px;">
-        The parser, interpreter, raycaster, sprite factory, physics and synthesizer are
-        <b style="color:var(--text)">all inside one 100 KB file</b>.
-      </p>
-      <a class="btn btn-ghost btn-sm" href="tutorial.html">Read the 10-minute tutorial <span class="arr">→</span></a>
     </div>
   </div>
 </section>
 
 <!-- ================= FEATURES ================= -->
-<section class="section" style="padding-top:20px;">
-  <h2 class="section-title reveal">Everything a retro FPS needs, <span class="grad">in the box</span></h2>
-  <p class="section-sub reveal">votyer handles rendering, physics, audio and game flow so you only write the fun part.</p>
+<section class="section" style="padding-top:24px;">
+  <h2 class="section-title reveal">Eight superpowers, <span class="grad">in the box</span></h2>
+  <p class="section-sub reveal">votyer v1.1 handles rendering, liquids, light, physics, audio and game flow — you write the fun part.</p>
   <div class="grid-3">
     <div class="card reveal">
-      <div class="ico">&#9670;</div>
-      <h3>Retro raycasting engine</h3>
-      <p>A DDA raycaster renders true first-person 3D corridors at 60 fps — textured walls, distance fog, head-bob and screen shake included.</p>
+      <div class="ico" style="color:#67e8f9;">≈</div>
+      <h3>Animated water</h3>
+      <p>Per-pixel wave distortion, sky reflection, caustic shimmer and splash physics on any <code>~</code> tile — three lines of script.</p>
+    </div>
+    <div class="card reveal">
+      <div class="ico" style="color:#ffd166;">✦</div>
+      <h3>Dynamic lights</h3>
+      <p>Glowing sprites become real light sources with distance falloff and torch flicker, baked into the textured raycaster.</p>
+    </div>
+    <div class="card reveal">
+      <div class="ico">&#9635;</div>
+      <h3>Textured raycasting</h3>
+      <p>Procedural brick, block and panel textures generated from your palette — floor and ceiling casting included. <code>ceiling off</code> opens the sky.</p>
     </div>
     <div class="card reveal">
       <div class="ico">&#10022;</div>
-      <h3>Sprites, items &amp; pickups</h3>
-      <p>Billboarded sprites with depth sorting and procedural pixel-art shapes — <code>crystal</code>, <code>ghost</code>, <code>robot</code>, <code>orb</code> and more. No image files needed.</p>
+      <h3>15 built-in sprites</h3>
+      <p>Crystals, coins, torches, ghosts, robots — procedurally drawn with tintable colors, ground shadows and glow. See the <a href="sprites.html" style="color:var(--mint)">sprite gallery</a>.</p>
     </div>
     <div class="card reveal">
       <div class="ico">&#9834;</div>
       <h3>Audio synthesizer</h3>
-      <p>Ten chiptune sound effects generated live with WebAudio — <code>sound pickup</code>, <code>sound win</code>, <code>sound denied</code> — zero audio assets.</p>
+      <p>13 chiptune sounds generated live with WebAudio — including <code>splash</code>, <code>zap</code> and <code>heal</code>. Zero audio assets.</p>
     </div>
     <div class="card reveal">
       <div class="ico">&#9881;</div>
       <h3>Physics &amp; collision</h3>
-      <p>Circle-vs-grid sliding collision, knockback, acceleration constants and invulnerability frames — tuned for that classic 90s feel.</p>
+      <p>Circle-vs-grid sliding collision, knockback, head-bob, water drag and screen shake — tuned for that classic 90s feel.</p>
     </div>
     <div class="card reveal">
       <div class="ico">&#9889;</div>
       <h3>Events &amp; rules</h3>
-      <p>Reactive game logic: <code>on take</code>, <code>on touch enemy</code>, <code>on all items taken</code>, <code>on reach exit</code> — write the rules, the engine fires them.</p>
+      <p><code>on take</code>, <code>on touch enemy</code>, <code>on enter water</code>, <code>on reach exit</code> — write the rules, the engine fires them.</p>
     </div>
     <div class="card reveal">
-      <div class="ico">&#9733;</div>
-      <h3>Menus &amp; HUD</h3>
-      <p>Title screen, pause, win/lose screens, health bar, score, minimap and message toasts render automatically from your script.</p>
+      <div class="ico" style="color:#a78bfa;">#</div>
+      <h3>E# for websites</h3>
+      <p>A second language that compiles to complete HTML pages — and embeds votyer games inline. All the languages, together.</p>
     </div>
   </div>
 </section>
 
-<!-- ================= HOW ================= -->
-<section class="section" style="padding-top:30px;">
-  <h2 class="section-title reveal">Up and running in <span class="grad">three moves</span></h2>
-  <p class="section-sub reveal">Everything happens in the browser — the language compiles at runtime.</p>
-  <div class="steps">
-    <div class="step reveal">
-      <span class="num">STEP 01</span>
-      <h3>Add the runtime</h3>
-      <p>One <code>&lt;script src="votyer.js"&gt;</code> tag. Works from a file, a server or GitHub Pages.</p>
+<!-- ================= SPRITES STRIP ================= -->
+<section class="section" style="padding-top:16px;">
+  <h2 class="section-title reveal">The sprite library, <span class="grad">live</span></h2>
+  <p class="section-sub reveal">Every shape is generated by the engine — tint it any color, make it glow. <a href="sprites.html" style="color:var(--mint)">Browse the full gallery →</a></p>
+  <div class="sprite-strip reveal" id="sprite-strip"></div>
+</section>
+
+<!-- ================= E# PROMO ================= -->
+<section class="section" style="padding-top:20px;">
+  <div class="esharp-card reveal">
+    <div>
+      <span class="tag-v11" style="margin-bottom:18px;display:inline-block;">NEW LANGUAGE — E#</span>
+      <h2>Now the same family builds <span class="grad">entire websites</span></h2>
+      <p>E# (<code>.e#</code> files) compiles to pure HTML, CSS and JavaScript: hero sections, feature grids,
+      gradient galleries, stats bands, quotes, code windows, footers — with galaxy particle backgrounds and
+      <b>votyer games embedded inline</b>. One language for your game, one for your site.</p>
+      <div class="hero-ctas" style="justify-content:flex-start;">
+        <a class="btn btn-primary btn-sm" href="playground.html">Compile a site now <span class="arr">→</span></a>
+        <a class="btn btn-ghost btn-sm" href="docs.html#esharp">Read the E# docs <span class="arr">→</span></a>
+      </div>
     </div>
-    <div class="step reveal">
-      <span class="num">STEP 02</span>
-      <h3>Write votyer</h3>
-      <p>Describe your <code>game</code>, draw the <code>map</code>, place <code>item</code>s and <code>enemy</code>s, and wire up <code>rules</code>.</p>
-    </div>
-    <div class="step reveal">
-      <span class="num">STEP 03</span>
-      <h3>Open the page</h3>
-      <p>The engine parses, compiles and boots your game into a menu — click to play. That's it.</p>
+    <div class="code-window" style="margin:0;">
+      <div class="code-window-head">
+        <span class="cdot cd1"></span><span class="cdot cd2"></span><span class="cdot cd3"></span>
+        <span class="cfile">site.e#</span>
+      </div>
+      <pre data-highlight data-lang="esharp">site "Nova" {
+  theme { accent #7c6cff }
+  hero {
+    title "Feel alive."
+    galaxy on
+  }
+  features "What I do" {
+    item "Interfaces" "Systems."
+  }
+  game { preset water-temple }
+}</pre>
     </div>
   </div>
 </section>
 
-<!-- ================= DEMO EMBED ================= -->
+<!-- ================= DEMO ================= -->
 <section class="section" style="padding-top:30px;">
   <h2 class="section-title reveal">Play <span class="grad">Crystal Quest</span> right here</h2>
-  <p class="section-sub reveal">The full retro raycasting demo — 6 crystals, patrolling ghosts, a stalker robot and a locked portal — written in 120 lines of votyer.</p>
+  <p class="section-sub reveal">The full demo — crystals, patrolling ghosts, a stalker, and a water channel you can swim through — written in votyer.</p>
   <div class="demo-frame reveal">
     <iframe src="votyer.html?embed" title="Crystal Quest — votyer.js demo game" loading="lazy" allow="fullscreen"></iframe>
   </div>
@@ -192,7 +231,7 @@ on start { say "Find the gem. Reach the portal." }
 <div class="cta-band">
   <div class="cta-inner reveal">
     <h2 class="section-title">Ship your first game <span class="grad">tonight</span></h2>
-    <p class="section-sub" style="margin:0 auto 34px;">The tutorial takes you from an empty HTML file to a finished raycaster with enemies, items and a win screen.</p>
+    <p class="section-sub" style="margin:0 auto 34px;">The tutorial takes you from an empty HTML file to a finished raycaster — with water, torches and a win screen.</p>
     <div class="hero-ctas">
       <a class="btn btn-primary" href="tutorial.html">Start the tutorial <span class="arr">→</span></a>
       <a class="btn btn-ghost" href="playground.html">Open the playground <span class="arr">→</span></a>
@@ -203,18 +242,39 @@ on start { say "Find the gem. Reach the portal." }
 <footer class="footer">
   <div class="footer-inner">
     <span class="footer-logo">votyer<span class="logo-js">.js</span></span>
-    <span>the next-gen language for retro HTML5 games · MIT licensed</span>
+    <span>the next-gen language for retro HTML5 games · water &amp; light edition · MIT</span>
     <span class="footer-links">
       <a href="docs.html">Docs</a> ·
       <a href="tutorial.html">Tutorial</a> ·
+      <a href="sprites.html">Sprites</a> ·
       <a href="playground.html">Playground</a> ·
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
     </span>
   </div>
 </footer>
 
+<script src="votyer.js"></script>
 <script src="assets/highlight.js"></script>
 <script src="assets/site.js"></script>
 <script src="assets/galaxy.js"></script>
+<script>
+// live sprite strip on the landing page
+(function () {
+  var STRIP = [
+    ['crystal', '#5eead4', 'Crystal'], ['coin', '#fbbf24', 'Coin'], ['torch', '#ff9f43', 'Torch'],
+    ['potion', '#34d399', 'Potion'], ['ghost', '#e2445c', 'Ghost'], ['orb', '#8b5cf6', 'Orb'],
+    ['key', '#f4c542', 'Key'], ['robot', '#94a3b8', 'Robot']
+  ];
+  var strip = document.getElementById('sprite-strip');
+  if (!strip || !window.Votyer) return;
+  STRIP.forEach(function (s) {
+    var chip = document.createElement('div');
+    chip.className = 'sprite-chip';
+    chip.innerHTML = '<canvas width="64" height="64" aria-label="' + s[2] + '"></canvas><span>' + s[2] + '</span>';
+    strip.appendChild(chip);
+    Votyer.spritePreview(chip.querySelector('canvas'), s[0], s[1], true);
+  });
+})();
+</script>
 </body>
 </html>

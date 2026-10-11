@@ -31,7 +31,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
 
   /* ================================================================
    *  ERRORS
@@ -57,6 +57,7 @@
     'rules': 1, 'on': 1, 'if': 1, 'else': 1, 'let': 1, 'repeat': 1, 'wait': 1,
     'true': 1, 'false': 1, 'and': 1, 'or': 1, 'not': 1,
     'items': 1, 'left': 1, 'count': 1, 'random': 1, 'enemies': 1,
+    'water': 1, 'enter': 1,
     'take': 1, 'hit': 1, 'reach': 1, 'start': 1, 'tick': 1, 'win': 1, 'lose': 1,
     'touch': 1, 'all': 1, 'taken': 1, 'dead': 1, 'wall': 1, 'bump': 1
   };
@@ -215,6 +216,7 @@
           case 'game': return this.parseGame();
           case 'map': return this.parseMap();
           case 'palette': return this.parsePalette();
+          case 'water': return this.parseWater();
           case 'item': return this.parseEntity('item');
           case 'enemy': return this.parseEntity('enemy');
           case 'exit': return this.parseExit();
@@ -222,7 +224,7 @@
           case 'on': return this.parseEvent();
         }
       }
-      throw VError('unknown declaration ' + this.show(tok) + ' — expected game / map / palette / item / enemy / exit / rules / on', tok.line, tok.col);
+      throw VError('unknown declaration ' + this.show(tok) + ' — expected game / map / palette / water / item / enemy / exit / rules / on', tok.line, tok.col);
     },
 
     /* -------- game block -------- */
@@ -245,13 +247,13 @@
           case 'title':
             settings.title = this.expectString();
             break;
-          case 'sky': case 'floor':
+          case 'sky': case 'floor': case 'fogcolor':
             settings[key] = this.parseColorish();
             break;
-          case 'fog': case 'speed': case 'turn': case 'fov': case 'sensitivity':
+          case 'fog': case 'speed': case 'turn': case 'fov': case 'sensitivity': case 'detail':
             settings[key] = this.expectNumber();
             break;
-          case 'minimap': case 'texture':
+          case 'minimap': case 'texture': case 'ceiling': case 'stars':
             settings[key] = this.parseOnOff();
             break;
           default:
@@ -260,6 +262,26 @@
       }
       this.expectOp('}');
       return { k: 'game', name: name, settings: settings };
+    },
+
+    /* -------- water -------- */
+    parseWater: function () {
+      this.expectKw('water');
+      this.expectOp('{');
+      var w = { k: 'water', color: null, wave: null, reflect: null };
+      while (!this.atOp('}')) {
+        var tok = this.peek();
+        if (tok.t !== 'ident') throw VError('expected a property inside water block, found ' + this.show(tok), tok.line, tok.col);
+        var key = this.next().v;
+        switch (key) {
+          case 'color': w.color = this.parseColorish(); break;
+          case 'wave': w.wave = this.expectNumber(); break;
+          case 'reflect': w.reflect = this.expectNumber(); break;
+          default: throw VError('unknown water property "' + key + '" — use color / wave / reflect', tok.line, tok.col);
+        }
+      }
+      this.expectOp('}');
+      return w;
     },
 
     parseColorish: function () {
@@ -335,6 +357,7 @@
           case 'color': e.color = this.parseColorish(); break;
           case 'value': e.value = this.expectNumber(); break;
           case 'glow': e.glow = this.parseOnOff(); break;
+          case 'pickup': if (kind !== 'item') throw VError('"pickup" is an item property', tok.line, tok.col); e.pickup = this.parseOnOff(); break;
           case 'speed': e.speed = this.expectNumber(); break;
           case 'sight': e.sight = this.expectNumber(); break;
           case 'hp': e.hp = this.expectNumber(); break;
@@ -382,7 +405,7 @@
     parseRules: function () {
       this.expectKw('rules');
       this.expectOp('{');
-      var r = { k: 'rules', touchEnemy: null, allItemsTaken: null, reachExit: null, bumpWall: null, enemyDead: null };
+      var r = { k: 'rules', touchEnemy: null, allItemsTaken: null, reachExit: null, bumpWall: null, enemyDead: null, enterWater: null, exitWater: null };
       while (!this.atOp('}')) {
         this.expectKw('on');
         var tok = this.peek();
@@ -391,7 +414,9 @@
         else if (this.atKw('reach')) { this.next(); this.expectKw('exit'); r.reachExit = this.parseBlock(); }
         else if (this.atKw('bump')) { this.next(); this.expectKw('wall'); r.bumpWall = this.parseBlock(); }
         else if (this.atKw('enemy')) { this.next(); this.expectKw('dead'); r.enemyDead = this.parseBlock(); }
-        else throw VError('unknown rule trigger — use: on touch enemy / on all items taken / on reach exit / on bump wall / on enemy dead', tok.line, tok.col);
+        else if (this.atKw('enter')) { this.next(); this.expectKw('water'); r.enterWater = this.parseBlock(); }
+        else if (this.atKw('exit') && this.peek(1) && this.peek(1).v === 'water') { this.next(); this.expectKw('water'); r.exitWater = this.parseBlock(); }
+        else throw VError('unknown rule trigger — use: on touch enemy / on all items taken / on reach exit / on bump wall / on enemy dead / on enter water / on exit water', tok.line, tok.col);
       }
       this.expectOp('}');
       return r;
@@ -621,6 +646,8 @@
       sky: '#12122a', floor: '#4a3626',
       fog: 0.4, speed: 3.0, turn: 2.6, fov: 66, sens: 0.0022,
       minimap: true, texture: true,
+      ceiling: true, stars: true, detail: 0.62, fogcolor: null,
+      water: { color: '#1a6f92', wave: 0.5, reflect: 0.65 },
       map: null, palette: {},
       items: {}, enemies: {}, exit: null,
       rules: {}, events: {}
@@ -637,6 +664,7 @@
           if (decl.settings.height) spec.height = decl.settings.height;
           if (decl.settings.sky) spec.sky = decl.settings.sky;
           if (decl.settings.floor) spec.floor = decl.settings.floor;
+          if (decl.settings.fogcolor) spec.fogcolor = decl.settings.fogcolor;
           if (decl.settings.fog != null) spec.fog = decl.settings.fog;
           if (decl.settings.speed != null) spec.speed = decl.settings.speed;
           if (decl.settings.turn != null) spec.turn = decl.settings.turn;
@@ -644,9 +672,17 @@
           if (decl.settings.sensitivity != null) spec.sens = decl.settings.sensitivity;
           if (decl.settings.minimap != null) spec.minimap = decl.settings.minimap;
           if (decl.settings.texture != null) spec.texture = decl.settings.texture;
+          if (decl.settings.ceiling != null) spec.ceiling = decl.settings.ceiling;
+          if (decl.settings.stars != null) spec.stars = decl.settings.stars;
+          if (decl.settings.detail != null) spec.detail = Math.max(0.3, Math.min(1, decl.settings.detail));
           break;
         case 'map': spec.map = decl.rows; break;
         case 'palette': spec.palette = decl.map; break;
+        case 'water':
+          if (decl.color) spec.water.color = decl.color;
+          if (decl.wave != null) spec.water.wave = decl.wave;
+          if (decl.reflect != null) spec.water.reflect = decl.reflect;
+          break;
         case 'item': spec.items[decl.name] = decl; break;
         case 'enemy': spec.enemies[decl.name] = decl; break;
         case 'exit': spec.exit = decl; break;
@@ -660,7 +696,7 @@
     // Normalize rows to equal length (pad with '.'), validate chars
     var w = 0, r;
     for (i = 0; i < spec.map.length; i++) w = Math.max(w, spec.map[i].length);
-    var walkable = { '.': 1, ' ': 1, 'P': 1 };
+    var walkable = { '.': 1, ' ': 1, 'P': 1, '~': 1 };
     var spawnChars = {};
     var itemName, en;
     for (itemName in spec.items) { if (spec.items[itemName].char) { spawnChars[spec.items[itemName].char] = { type: 'item', name: itemName }; walkable[spec.items[itemName].char] = 1; } }
@@ -707,6 +743,7 @@
 
     // sanity warnings
     if (spec.exit && spec.exit.char === '#') throw VError('the exit char cannot be "#" — pick another character');
+    spec.waterRGB = hexToRgb(spec.water.color);
     return spec;
   }
 
@@ -828,7 +865,7 @@
       }
       case 'Wait': {
         engine.timers.push({
-          t: Math.max(0, this.evalNum(s.e)),
+          t: Math.max(0, this.evalNum(s.secs != null ? s.secs : s.e)),
           body: s.body,
           handlerId: 'wait'
         });
@@ -857,7 +894,7 @@
     this.W = spec.width;
     this.H = spec.height;
 
-    this.zbuf = new Float32Array(this.W);
+    this.zbuf = new Float32Array(this.W); // kept for API compat (renderers own copy below)
     this.state = 'menu';
     this.runtime = new Runtime(this);
     this.audio = new AudioSynth(this);
@@ -880,19 +917,32 @@
     this.showMinimap = !!spec.minimap;
     this.destroyed = false;
     this.viewDist = 16 - clamp01(spec.fog) * 10;
+    this.playerInWater = false;
 
-    // fog atmosphere overlay (vertical gradient, drawn once)
-    this.atmo = document.createElement('canvas');
-    this.atmo.width = 1; this.atmo.height = this.H;
-    (function () {
-      var g = self.atmo.getContext('2d');
-      var grad = g.createLinearGradient(0, 0, 0, self.H);
-      grad.addColorStop(0, 'rgba(0,0,0,0.25)');
-      grad.addColorStop(0.5, 'rgba(0,0,0,0.45)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.3)');
-      g.fillStyle = grad;
-      g.fillRect(0, 0, 1, self.H);
-    })();
+    // ---- hi-detail software renderer: internal framebuffer ----
+    this.detail = clamp01(spec.detail != null ? spec.detail : 0.62);
+    if (this.detail < 0.3) this.detail = 0.3;
+    if (this.detail > 1) this.detail = 1;
+    this.rw = Math.max(200, Math.min(this.W, Math.round(this.W * this.detail)));
+    this.rh = Math.max(140, Math.round(this.H * this.rw / this.W));
+    this.internal = document.createElement('canvas');
+    this.internal.width = this.rw; this.internal.height = this.rh;
+    this.ictx = this.internal.getContext('2d');
+    this.img = this.ictx.createImageData(this.rw, this.rh);
+    this.buf = this.img.data;
+    for (var bi = 3; bi < this.buf.length; bi += 4) this.buf[bi] = 255;
+    this.zbuf = new Float32Array(this.rw);
+
+    // fog color (defaults to the sky color)
+    this.fogRGB = hexToRgb(spec.fogcolor || spec.sky);
+    this.skyTop = shadeRGB(hexToRgb(spec.sky), 0.32);
+    this.hasWater = false;
+    var wy, wx;
+    for (wy = 0; wy < spec.mapH && !this.hasWater; wy++)
+      for (wx = 0; wx < spec.mapW; wx++)
+        if (spec.grid[wy][wx] === '~') { this.hasWater = true; break; }
+
+    this.buildTextures();
 
     // menu starfield
     this.stars = [];
@@ -938,6 +988,10 @@
 
   function clamp01(v) { return Math.max(0, Math.min(1, v == null ? 0 : v)); }
 
+  function shadeRGB(rgb, f) {
+    return [Math.round(rgb[0] * f), Math.round(rgb[1] * f), Math.round(rgb[2] * f)];
+  }
+
   Engine.prototype.destroy = function () {
     this.destroyed = true;
     if (this._raf) cancelAnimationFrame(this._raf);
@@ -957,7 +1011,7 @@
   };
   Engine.prototype.isWall = function (mx, my) {
     var ch = this.cellAt(mx, my);
-    return !this.spec.spawnChars[ch] && ch !== '.' && ch !== ' ';
+    return !this.spec.spawnChars[ch] && ch !== '.' && ch !== ' ' && ch !== '~';
   };
   Engine.prototype.isWallAt = function (fx, fy) {
     return this.isWall(Math.floor(fx), Math.floor(fy));
@@ -999,6 +1053,7 @@
             shape: bp.shape || 'crystal', color: bp.color || '#5eead4',
             value: bp.value != null ? bp.value : 10,
             glow: bp.glow != null ? bp.glow : true,
+            pickup: bp.pickup != null ? bp.pickup : true,
             onTake: bp.onTake
           });
         } else if (sp.type === 'enemy') {
@@ -1020,6 +1075,7 @@
       }
     }
     this.player = { x: px, y: py, a: 0 };
+    this.playerInWater = false;
     this.runtime.vars.score = 0;
     this.runtime.vars.health = 100;
     this.timers = [];
@@ -1259,13 +1315,26 @@
     var fwd = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
     var strafe = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0);
     var moving = (fwd !== 0 || strafe !== 0);
+
+    // water detection + transitions
+    var pcell = this.cellAt(Math.floor(p.x), Math.floor(p.y));
+    var inWater = pcell === '~';
+    if (inWater !== this.playerInWater) {
+      this.playerInWater = inWater;
+      this.playSound('splash');
+      this.addShake(0.1);
+      if (inWater) this.runtime.execBlock(this.spec.rules.enterWater, 'on enter water');
+      else this.runtime.execBlock(this.spec.rules.exitWater, 'on exit water');
+    }
+
     if (moving) {
       var ca = Math.cos(p.a), sa = Math.sin(p.a);
       var mx = ca * fwd + -sa * strafe;
       var my = sa * fwd + ca * strafe;
       var len = Math.sqrt(mx * mx + my * my) || 1;
       mx /= len; my /= len;
-      var step = spec.speed * dt;
+      var eff = spec.speed * (this.playerInWater ? 0.55 : 1);   // water slows you down
+      var step = eff * dt;
       var nx = p.x + mx * step, ny = p.y + my * step;
       var bumped = false;
       if (!this.circleHitsWall(nx, p.y, PLAYER_RADIUS)) p.x = nx; else bumped = true;
@@ -1274,7 +1343,7 @@
         this.bumpCd = 0.9;
         this.runtime.execBlock(this.spec.rules.bumpWall, 'on bump wall');
       }
-      this.bobT += dt * 9.5;
+      this.bobT += dt * (this.playerInWater ? 7.2 : 9.5);
     } else {
       this.bobT += dt * 1.6;
     }
@@ -1300,7 +1369,7 @@
     var p = this.player;
     for (var i = 0; i < this.items.length; i++) {
       var it = this.items[i];
-      if (it.taken) continue;
+      if (it.taken || it.pickup === false) continue;
       var dx = it.x - p.x, dy = it.y - p.y;
       if (dx * dx + dy * dy < 0.3) {
         it.taken = true;
@@ -1462,47 +1531,434 @@
     return cached;
   };
 
-  Engine.prototype.renderWalls = function () {
+  /* ---------------- procedural texture factory (v1.1) ---------------- */
+  var TEX = 64;
+
+  function texHash(a, b) {
+    var h = (a * 374761393 + b * 668265263) | 0;
+    h = (h ^ (h >> 13)) * 1274126177 | 0;
+    return ((h ^ (h >> 16)) >>> 0) / 4294967295;
+  }
+
+  // builds a 64x64 RGB texture for a wall material from its base color
+  function makeWallTexture(colorHex, variant) {
+    var base = hexToRgb(colorHex);
+    var d = new Uint8Array(TEX * TEX * 3);
+    var x, y, i, r, g, b;
+
+    function put(px, py, rr, gg, bb) {
+      i = (py * TEX + px) * 3;
+      d[i] = rr; d[i + 1] = gg; d[i + 2] = bb;
+    }
+
+    if (variant === 1) {          // large stone blocks
+      for (y = 0; y < TEX; y++) {
+        for (x = 0; x < TEX; x++) {
+          var bx = (x >> 5), by = (y >> 5);
+          var j = 0.82 + texHash(bx * 7 + 1, by * 13 + 5) * 0.34;
+          var grout = (x % 32 < 2) || (y % 32 < 2);
+          var n = (texHash(x, y) - 0.5) * 22;
+          var m = j * (grout ? 0.55 : 1) * ((x % 32 === 2 || y % 32 === 2) ? 1.14 : 1);
+          r = Math.min(255, Math.max(0, base[0] * m + n));
+          g = Math.min(255, Math.max(0, base[1] * m + n));
+          b = Math.min(255, Math.max(0, base[2] * m + n));
+          put(x, y, r, g, b);
+        }
+      }
+    } else if (variant === 2) {   // tech panels with rivets
+      for (y = 0; y < TEX; y++) {
+        for (x = 0; x < TEX; x++) {
+          var px2 = x % 32, py2 = y % 32;
+          var m2 = 1;
+          if (px2 < 2 || py2 < 2) m2 = 0.5;                 // seams
+          else if (px2 > 28 || py2 > 28) m2 = 0.72;
+          var rivet = (px2 > 4 && px2 < 8 && py2 > 4 && py2 < 8) || (px2 > 23 && px2 < 27 && py2 > 23 && py2 < 27);
+          if (rivet) m2 = 1.25;
+          var n2 = (texHash(x + 91, y + 17) - 0.5) * 16;
+          r = Math.min(255, Math.max(0, base[0] * m2 + n2));
+          g = Math.min(255, Math.max(0, base[1] * m2 + n2));
+          b = Math.min(255, Math.max(0, base[2] * m2 + n2));
+          put(x, y, r, g, b);
+        }
+      }
+    } else {                      // classic bricks
+      var bh = 16, bw = 21;
+      for (y = 0; y < TEX; y++) {
+        var row = (y / bh) | 0;
+        var off = (row % 2) * (bw >> 1);
+        for (x = 0; x < TEX; x++) {
+          var xx = (x + off) % bw;
+          var yy = y % bh;
+          var bxx = (((x + off) / bw) | 0);
+          var j2 = 0.8 + texHash(bxx * 31 + row * 7, row * 17 + 3) * 0.36;
+          var mortar = yy < 2 || xx < 2;
+          var m3 = mortar ? 0.5 : j2 * (yy === 2 || xx === 2 ? 1.12 : (yy > bh - 3 ? 0.82 : 1));
+          var n3 = (texHash(x * 3 + 11, y * 5 + 7) - 0.5) * 20;
+          r = Math.min(255, Math.max(0, base[0] * m3 + n3));
+          g = Math.min(255, Math.max(0, base[1] * m3 + n3));
+          b = Math.min(255, Math.max(0, base[2] * m3 + n3));
+          put(x, y, r, g, b);
+        }
+      }
+    }
+    return { d: d };
+  }
+
+  function makeFloorTexture(colorHex, dark) {
+    var base = hexToRgb(colorHex);
+    var f = dark ? 0.52 : 1;
+    var d = new Uint8Array(TEX * TEX * 3);
+    for (var y = 0; y < TEX; y++) {
+      for (var x = 0; x < TEX; x++) {
+        var t = ((x >> 5) & 1) ^ ((y >> 5) & 1) ? 0.92 : 1;   // subtle checker
+        var grout = (x % 32 < 1) || (y % 32 < 1);
+        var n = (texHash(x * 13 + 2, y * 7 + 5) - 0.5) * 20;
+        var i = (y * TEX + x) * 3;
+        d[i] = Math.min(255, Math.max(0, base[0] * f * t * (grout ? 0.6 : 1) + n));
+        d[i + 1] = Math.min(255, Math.max(0, base[1] * f * t * (grout ? 0.6 : 1) + n));
+        d[i + 2] = Math.min(255, Math.max(0, base[2] * f * t * (grout ? 0.6 : 1) + n));
+      }
+    }
+    return { d: d };
+  }
+
+  Engine.prototype.buildTextures = function () {
+    var variantOf = function (ch) {
+      var h = 0;
+      for (var q = 0; q < ch.length; q++) h = (h * 31 + ch.charCodeAt(q)) | 0;
+      return Math.abs(h) % 3;
+    };
+    this.wallTex = Object.create(null);
+    for (var y = 0; y < this.spec.mapH; y++) {
+      for (var x = 0; x < this.spec.mapW; x++) {
+        var ch = this.spec.grid[y][x];
+        if (ch === '~' || this.spec.spawnChars[ch]) continue;
+        if (this.wallTex[ch]) continue;
+        var col = this.spec.palette[ch];
+        if (!col) {
+          var rgb = this.spec.wallColors[ch] || [130, 130, 140];
+          col = rgbToHex(rgb);
+        }
+        this.wallTex[ch] = makeWallTexture(col, variantOf(ch));
+      }
+    }
+    if (!this.wallTex['#']) this.wallTex['#'] = makeWallTexture('#8a8f98', 0);
+    this.floorTex = makeFloorTexture(this.spec.floor, false);
+    this.ceilTex = makeFloorTexture(this.spec.sky, true);
+  };
+
+  function rgbToHex(rgb) {
+    var h = function (v) { var s = v.toString(16); return s.length < 2 ? '0' + s : s; };
+    return '#' + h(rgb[0]) + h(rgb[1]) + h(rgb[2]);
+  }
+
+  /* ---------------- dynamic lights (v1.1) ---------------- */
+  Engine.prototype.collectLights = function () {
+    var p = this.player;
+    var lights = [{ x: p.x, y: p.y, r: 255, g: 212, b: 165, i: 0.5 }];   // player lamp
+    var cands = [];
+    var i, ent;
+    for (i = 0; i < this.items.length; i++) {
+      ent = this.items[i];
+      if (ent.taken || !ent.glow) continue;
+      if (!ent._lrgb) ent._lrgb = hexToRgb(ent.color);
+      cands.push({ x: ent.x, y: ent.y, r: ent._lrgb[0], g: ent._lrgb[1], b: ent._lrgb[2], i: 2.2 });
+    }
+    for (i = 0; i < this.enemies.length; i++) {
+      ent = this.enemies[i];
+      if (ent.dying || !ent.glow) continue;
+      if (!ent._lrgb) ent._lrgb = hexToRgb(ent.color);
+      cands.push({ x: ent.x, y: ent.y, r: ent._lrgb[0], g: ent._lrgb[1], b: ent._lrgb[2], i: 1.7 });
+    }
+    if (this.exitPos) {
+      var ec = (this.spec.exit && this.spec.exit.color) || '#8b5cf6';
+      if (!this._exitLrgb) this._exitLrgb = hexToRgb(ec);
+      cands.push({ x: this.exitPos.x, y: this.exitPos.y, r: this._exitLrgb[0], g: this._exitLrgb[1], b: this._exitLrgb[2], i: 2.0 });
+    }
+    cands.sort(function (a, b) {
+      var da = (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y);
+      var db = (b.x - p.x) * (b.x - p.x) + (b.y - p.y) * (b.y - p.y);
+      return da - db;
+    });
+    var n = Math.min(5, cands.length);
+    for (i = 0; i < n; i++) {
+      var L = cands[i];
+      // torch flicker
+      L.i *= 0.78 + 0.22 * Math.sin(this.time * 10.5 + L.x * 3.7 + L.y * 5.3);
+      lights.push(L);
+    }
+    return lights;
+  };
+
+  /* ---------------- sky (open-air maps: ceiling off) ---------------- */
+  Engine.prototype.renderSky = function (rw, hr) {
+    var buf = this.buf;
+    var top = this.skyTop, fog = this.fogRGB;
+    var y, x, o;
+    for (y = 0; y < hr; y++) {
+      var t = y / hr;
+      var t2 = t * t * (3 - 2 * t);
+      var r = top[0] + (fog[0] * 1.12 + 14 - top[0]) * t2;
+      var g = top[1] + (fog[1] * 1.12 + 14 - top[1]) * t2;
+      var b = top[2] + (fog[2] * 1.12 + 18 - top[2]) * t2;
+      o = y * rw * 4;
+      for (x = 0; x < rw; x++) { buf[o] = r; buf[o + 1] = g; buf[o + 2] = b; o += 4; }
+    }
+    if (!this.spec.stars) return;
+    // deterministic starfield per ray angle
+    var p = this.player;
+    var time = this.time;
+    for (x = 0; x < rw; x++) {
+      var cameraX = 2 * x / rw - 1;
+      var rdx = this._dirX + this._planeX * cameraX;
+      var rdy = this._dirY + this._planeY * cameraX;
+      var a = Math.atan2(rdy, rdx);
+      var seed = Math.floor((a + Math.PI) * 140);
+      var h1 = Math.sin(seed * 127.1) * 43758.5453; h1 -= Math.floor(h1);
+      if (h1 > 0.12) continue;
+      var h2 = Math.sin(seed * 311.7) * 12543.21; h2 -= Math.floor(h2);
+      var sy = 2 + ((h2 * (hr - 6)) | 0);
+      var tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(time * 2.2 + seed * 1.7));
+      var bright = 150 + 105 * tw;
+      o = (sy * rw + x) * 4;
+      buf[o] = bright; buf[o + 1] = bright; buf[o + 2] = Math.min(255, bright + 25);
+      if (sy + 1 < hr && tw > 0.8) {
+        o += rw * 4;
+        buf[o] = bright * 0.6; buf[o + 1] = bright * 0.6; buf[o + 2] = Math.min(255, bright * 0.6 + 20);
+      }
+    }
+  };
+
+  /* ---------------- ceiling casting ---------------- */
+  Engine.prototype.renderCeiling = function (rw, rh, hr) {
+    var buf = this.buf, p = this.player;
+    var tex = this.ceilTex.d;
+    var viewDist = this.viewDist;
+    var fogR = this.fogRGB[0], fogG = this.fogRGB[1], fogB = this.fogRGB[2];
+    var rdx0 = this._dirX - this._planeX, rdy0 = this._dirY - this._planeY;
+    var rdx1 = this._dirX + this._planeX, rdy1 = this._dirY + this._planeY;
+    for (var y = 0; y < hr; y++) {
+      var pRow = hr - y;
+      var rowDist = (0.5 * rh) / pRow;
+      var o = y * rw * 4;
+      var u = rowDist / viewDist; if (u > 1) u = 1;
+      var f = u * u * (3 - 2 * u);
+      var mr = (1 - f) * 0.9;
+      var fr = fogR * f, fg = fogG * f, fb = fogB * f;
+      var stepX = rowDist * (rdx1 - rdx0) / rw;
+      var stepY = rowDist * (rdy1 - rdy0) / rw;
+      var fx = p.x + rowDist * rdx0;
+      var fy = p.y + rowDist * rdy0;
+      for (var x = 0; x < rw; x++) {
+        var tIdx = ((((fy - (fy | 0)) * 64) | 0) * 64 + (((fx - (fx | 0)) * 64) | 0)) * 3;
+        buf[o] = tex[tIdx] * mr + fr;
+        buf[o + 1] = tex[tIdx + 1] * mr + fg;
+        buf[o + 2] = tex[tIdx + 2] * mr + fb;
+        o += 4; fx += stepX; fy += stepY;
+      }
+    }
+  };
+
+  /* ---------------- floor casting + animated water ---------------- */
+  Engine.prototype.renderFloor = function (rw, rh, hr) {
+    var buf = this.buf, p = this.player;
+    var tex = this.floorTex.d;
+    var viewDist = this.viewDist;
+    var fogR = this.fogRGB[0], fogG = this.fogRGB[1], fogB = this.fogRGB[2];
+    var rdx0 = this._dirX - this._planeX, rdy0 = this._dirY - this._planeY;
+    var rdx1 = this._dirX + this._planeX, rdy1 = this._dirY + this._planeY;
+    var time = this.time;
+    var wcol = this.spec.waterRGB;
+    var wave = 0.03 + clamp01(this.spec.water.wave) * 0.08;
+    var reflect = clamp01(this.spec.water.reflect);
+    var lights = this._lights;
+    var r, g, b;
+
+    for (var y = hr + 1; y < rh; y++) {
+      var pRow = y - hr;
+      var rowDist = (0.5 * rh) / pRow;
+      var o = y * rw * 4;
+
+      var u = rowDist / viewDist; if (u > 1) u = 1;
+      var f = u * u * (3 - 2 * u);
+      var mr = 1 - f;
+      var fr = fogR * f, fg = fogG * f, fb = fogB * f;
+      if (rowDist > viewDist) {   // fully fogged row — fast fill
+        for (var ff = 0; ff < rw; ff++) { buf[o] = fogR; buf[o + 1] = fogG; buf[o + 2] = fogB; o += 4; }
+        continue;
+      }
+
+      var stepX = rowDist * (rdx1 - rdx0) / rw;
+      var stepY = rowDist * (rdy1 - rdy0) / rw;
+      var fx = p.x + rowDist * rdx0;
+      var fy = p.y + rowDist * rdy0;
+
+      for (var xb = 0; xb < rw; xb += 4) {
+        var xe = Math.min(rw, xb + 4);
+        // block light sampled at the block centre
+        var cwx = fx + stepX * 2, cwy = fy + stepY * 2;
+        var lr = 0, lg = 0, lb = 0;
+        for (var li = 0; li < lights.length; li++) {
+          var L = lights[li];
+          var ldx = cwx - L.x, ldy = cwy - L.y;
+          var ld2 = ldx * ldx + ldy * ldy;
+          var att = L.i / (1 + 0.55 * Math.sqrt(ld2) + 0.5 * ld2);
+          lr += L.r * att; lg += L.g * att; lb += L.b * att;
+        }
+        if (lr > 150) lr = 150; if (lg > 150) lg = 150; if (lb > 150) lb = 150;
+
+        for (var x = xb; x < xe; x++) {
+          var cx = fx | 0, cy = fy | 0;
+          var sx = fx - cx, sy = fy - cy;
+          var isWater = this.hasWater && this.cellAt(cx, cy) === '~';
+          var tIdx;
+          if (isWater) {
+            var wx2 = sx + Math.sin(fy * 2.9 + time * 1.9) * wave + Math.sin(fx * 1.7 - time * 1.2) * wave * 0.6;
+            var wy2 = sy + Math.cos(fx * 2.4 - time * 1.6) * wave;
+            wx2 -= Math.floor(wx2); wy2 -= Math.floor(wy2);
+            tIdx = ((wy2 * 64) | 0) * 64 * 3 + ((wx2 * 64) | 0) * 3;
+            var br = tex[tIdx], bg = tex[tIdx + 1], bb = tex[tIdx + 2];
+            // body: blend floor texture into deep water color
+            var dr = wcol[0] * 0.42, dg = wcol[1] * 0.42, db = wcol[2] * 0.42;
+            r = br * 0.24 + dr; g = bg * 0.24 + dg; b = bb * 0.24 + db;
+            // sky reflection (fresnel-ish: grows with distance)
+            var refl = reflect * Math.min(1, rowDist * 0.14);
+            r = r * (1 - refl) + (fr + 26) * refl;
+            g = g * (1 - refl) + (fg + 30) * refl;
+            b = b * (1 - refl) + (fb + 44) * refl;
+            // moving specular highlight
+            var sp = Math.sin(fx * 5.1 + time * 2.3) * Math.sin(fy * 4.4 - time * 1.7);
+            if (sp > 0.68) { var sa = (sp - 0.68) * 2.6 * 255 * 0.55; r += sa; g += sa; b += sa; }
+            // gentle ripple bands
+            var rp = Math.sin((fx + fy) * 7.7 + time * 2.7);
+            r += rp * 6; g += rp * 8; b += rp * 10;
+            r = r * mr + fr + lr; g = g * mr + fg + lg; b = b * mr + fb + lb;
+          } else {
+            tIdx = ((sy * 64) | 0) * 64 * 3 + ((sx * 64) | 0) * 3;
+            r = tex[tIdx] * mr + fr + lr;
+            g = tex[tIdx + 1] * mr + fg + lg;
+            b = tex[tIdx + 2] * mr + fb + lb;
+          }
+          buf[o] = r; buf[o + 1] = g; buf[o + 2] = b;
+          o += 4; fx += stepX; fy += stepY;
+        }
+      }
+    }
+  };
+
+  /* ---------------- the new 3D pipeline (v1.1) ---------------- */
+  Engine.prototype.render3D = function () {
+    var rw = this.rw, rh = this.rh;
+    var p = this.player;
+    var horizon = rh / 2 + (this.viewBobPx() + this.shakePx()) * rh / this.H;
+    if (horizon < 10) horizon = 10;
+    if (horizon > rh - 10) horizon = rh - 10;
+    var hr = horizon | 0;
+    this._rHorizon = hr;
+
+    this._lights = this.collectLights();
+
+    if (this.spec.ceiling) this.renderCeiling(rw, rh, hr);
+    else this.renderSky(rw, hr);
+    this.renderFloor(rw, rh, hr);
+
+    var buf = this.buf;
+    var zbuf = this.zbuf;
+    var wallTex = this.wallTex;
+    var viewDist = this.viewDist;
+    var fogR = this.fogRGB[0], fogG = this.fogRGB[1], fogB = this.fogRGB[2];
+    var lights = this._lights;
+
+    for (var x = 0; x < rw; x++) {
+      var cameraX = 2 * x / rw - 1;
+      var rdx = this._dirX + this._planeX * cameraX;
+      var rdy = this._dirY + this._planeY * cameraX;
+      var ray = this.castRay(p.x, p.y, rdx, rdy);
+      var dist = ray.dist;
+      zbuf[x] = dist;
+
+      var lineH = rh / dist;
+      var dsF = horizon - lineH / 2;
+      var y0 = dsF < 0 ? 0 : dsF | 0;
+      var y1 = dsF + lineH; if (y1 > rh) y1 = rh; y1 = y1 | 0;
+      if (y1 <= y0) continue;
+
+      var wallX = ray.side === 0 ? (p.y + dist * rdy) : (p.x + dist * rdx);
+      wallX -= Math.floor(wallX);
+      var texX = (wallX * TEX) | 0;
+      if ((ray.side === 0 && rdx > 0) || (ray.side === 1 && rdy < 0)) texX = TEX - 1 - texX;
+
+      var tex = wallTex[ray.ch] || wallTex['#'];
+      if (!tex) continue;
+      var td = tex.d;
+
+      var uu = dist / viewDist; if (uu > 1) uu = 1;
+      var fog = uu * uu * (3 - 2 * uu);
+      var mr = 1 - fog;
+      if (ray.side === 1) mr *= 0.76;
+      var fr = fogR * fog, fg = fogG * fog, fb = fogB * fog;
+
+      // lights at the wall hit point
+      var hx = p.x + rdx * dist, hy = p.y + rdy * dist;
+      var lr = 0, lg = 0, lb = 0;
+      for (var li = 0; li < lights.length; li++) {
+        var L = lights[li];
+        var ldx = hx - L.x, ldy = hy - L.y;
+        var ld2 = ldx * ldx + ldy * ldy;
+        var att = L.i / (1 + 0.55 * Math.sqrt(ld2) + 0.5 * ld2);
+        lr += L.r * att; lg += L.g * att; lb += L.b * att;
+      }
+      if (lr > 150) lr = 150; if (lg > 150) lg = 150; if (lb > 150) lb = 150;
+
+      var step = TEX / lineH;
+      var tpos = (y0 - dsF) * step;
+      var o = (y0 * rw + x) * 4;
+      for (var y = y0; y < y1; y++) {
+        var tIdx = (((tpos | 0) & 63) * TEX + texX) * 3;
+        buf[o] = td[tIdx] * mr + fr + lr;
+        buf[o + 1] = td[tIdx + 1] * mr + fg + lg;
+        buf[o + 2] = td[tIdx + 2] * mr + fb + lb;
+        o += rw * 4;
+        tpos += step;
+      }
+    }
+
+    // blit the internal buffer to the display canvas
+    this.ictx.putImageData(this.img, 0, 0);
+    var ctx = this.ctx;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.internal, 0, 0, rw, rh, 0, 0, this.W, this.H);
+  };
+
+  /* ---------------- legacy flat renderer (texture off) ---------------- */
+  Engine.prototype.renderWallsFlat = function () {
     var ctx = this.ctx, W = this.W, H = this.H;
     var p = this.player;
-    var fovRad = (this.spec.fov || 66) * Math.PI / 180;
-    var planeLen = Math.tan(fovRad / 2);
-    var dirX = Math.cos(p.a), dirY = Math.sin(p.a);
-    var planeX = -dirY * planeLen, planeY = dirX * planeLen;
+    var rw = this.rw;
+    var zscale = rw / W;
     var horizon = H / 2 + this.viewBobPx() + this.shakePx();
     var viewDist = this.viewDist;
-    var tex = this.spec.texture;
 
-    // ceiling + floor
     ctx.fillStyle = this.spec.sky;
     ctx.fillRect(0, 0, W, Math.max(0, horizon));
     ctx.fillStyle = this.spec.floor;
     ctx.fillRect(0, horizon, W, H - horizon);
-    ctx.drawImage(this.atmo, 0, 0, W, H);
 
-    for (var x = 0; x < W; x++) {
-      var cameraX = 2 * x / W - 1;
-      var rdx = dirX + planeX * cameraX;
-      var rdy = dirY + planeY * cameraX;
+    for (var xi = 0; xi < rw; xi++) {
+      var cameraX = 2 * xi / rw - 1;
+      var rdx = this._dirX + this._planeX * cameraX;
+      var rdy = this._dirY + this._planeY * cameraX;
       var ray = this.castRay(p.x, p.y, rdx, rdy);
       var dist = ray.dist;
-      this.zbuf[x] = dist;
+      this.zbuf[xi] = dist;
 
       var h = H / dist;
       var top = horizon - h / 2;
       var shade = 1 - dist / viewDist;
       shade = Math.max(0.05, Math.min(1, shade));
       if (ray.side === 1) shade *= 0.78;
-
-      if (tex) {
-        var wallX = ray.side === 0 ? (p.y + dist * rdy) : (p.x + dist * rdx);
-        wallX -= Math.floor(wallX);
-        if (((Math.floor(wallX * 8)) % 2) === 0) shade *= 0.86;
-      }
-      if (shade > 1) shade = 1;
-
       ctx.fillStyle = this.shadeColor(ray.ch, shade);
-      ctx.fillRect(x, top, 1, h);
+      ctx.fillRect(xi / zscale, top, 1 / zscale + 0.5, h);
     }
   };
 
@@ -1639,6 +2095,125 @@
         g.beginPath(); g.ellipse(26, 18, 8, 4, -0.5, 0, Math.PI * 2); g.fill();
         break;
       }
+      case 'torch': {
+        g.fillStyle = '#5a3a1e';
+        g.fillRect(29, 26, 6, 30);
+        g.fillStyle = '#7a5228';
+        g.fillRect(29, 26, 3, 30);
+        var fl = g.createRadialGradient(32, 18, 2, 32, 20, 16);
+        fl.addColorStop(0, '#fff8d0');
+        fl.addColorStop(0.35, '#ffd166');
+        fl.addColorStop(0.7, 'rgba(255,120,40,0.85)');
+        fl.addColorStop(1, 'rgba(255,80,20,0)');
+        g.fillStyle = fl;
+        g.beginPath(); g.ellipse(32, 19, 11, 15, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#fffbe8';
+        g.beginPath(); g.ellipse(32, 17, 4, 6, 0, 0, Math.PI * 2); g.fill();
+        break;
+      }
+      case 'potion': {
+        g.fillStyle = 'rgba(210,235,255,0.35)';
+        g.beginPath(); g.arc(32, 40, 15, 0, Math.PI * 2); g.fill();
+        g.fillRect(28, 12, 8, 14);
+        var liq = g.createLinearGradient(0, 30, 0, 54);
+        liq.addColorStop(0, color);
+        liq.addColorStop(1, shade(color, 0.55));
+        g.fillStyle = liq;
+        g.beginPath(); g.arc(32, 40, 12, 0, Math.PI * 2); g.fill();
+        g.fillRect(29, 14, 6, 16);
+        g.fillStyle = 'rgba(255,255,255,0.75)';
+        g.beginPath(); g.arc(27, 35, 3, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(37, 44, 2, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#8b6a4a';
+        g.fillRect(26, 9, 12, 4);
+        break;
+      }
+      case 'key': {
+        g.strokeStyle = color;
+        g.lineWidth = 5;
+        g.beginPath(); g.arc(24, 24, 10, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.moveTo(31, 31); g.lineTo(48, 48); g.stroke();
+        g.lineWidth = 4;
+        g.beginPath(); g.moveTo(44, 44); g.lineTo(50, 38); g.stroke();
+        g.beginPath(); g.moveTo(48, 48); g.lineTo(54, 42); g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.5)';
+        g.beginPath(); g.arc(21, 21, 3, 0, Math.PI * 2); g.fill();
+        break;
+      }
+      case 'barrel': {
+        var br2 = g.createLinearGradient(12, 0, 52, 0);
+        br2.addColorStop(0, shade(color, 0.6));
+        br2.addColorStop(0.4, color);
+        br2.addColorStop(1, shade(color, 0.5));
+        g.fillStyle = br2;
+        g.beginPath();
+        g.moveTo(14, 14); g.lineTo(50, 14);
+        g.quadraticCurveTo(56, 32, 50, 54);
+        g.lineTo(14, 54);
+        g.quadraticCurveTo(8, 32, 14, 14);
+        g.closePath(); g.fill();
+        g.fillStyle = '#3a2a18';
+        g.fillRect(12, 20, 40, 4);
+        g.fillRect(12, 44, 40, 4);
+        g.strokeStyle = 'rgba(0,0,0,0.35)';
+        g.beginPath();
+        g.moveTo(16, 14); g.quadraticCurveTo(12, 32, 16, 54);
+        g.moveTo(48, 14); g.quadraticCurveTo(52, 32, 48, 54);
+        g.stroke();
+        break;
+      }
+      case 'mushroom': {
+        var cap = g.createRadialGradient(26, 20, 4, 32, 26, 24);
+        cap.addColorStop(0, '#ffffff');
+        cap.addColorStop(0.3, color);
+        cap.addColorStop(1, shade(color, 0.5));
+        g.fillStyle = cap;
+        g.beginPath(); g.arc(32, 28, 21, Math.PI, 0); g.closePath(); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.85)';
+        g.beginPath(); g.arc(24, 20, 4, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(40, 22, 3, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(32, 16, 3, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#e8e0d0';
+        g.beginPath();
+        g.moveTo(26, 30); g.quadraticCurveTo(24, 50, 30, 54);
+        g.lineTo(38, 54); g.quadraticCurveTo(40, 50, 38, 30);
+        g.closePath(); g.fill();
+        break;
+      }
+      case 'coin': {
+        var cg = g.createRadialGradient(28, 26, 3, 32, 32, 20);
+        cg.addColorStop(0, '#fff3c0');
+        cg.addColorStop(0.5, color);
+        cg.addColorStop(1, shade(color, 0.55));
+        g.fillStyle = cg;
+        g.beginPath(); g.arc(32, 32, 19, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = shade(color, 0.7);
+        g.lineWidth = 2.5;
+        g.beginPath(); g.arc(32, 32, 14, 0, Math.PI * 2); g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.9)';
+        g.beginPath(); g.arc(25, 24, 4, 0, Math.PI * 2); g.fill();
+        break;
+      }
+      case 'sword': {
+        var bl = g.createLinearGradient(40, 4, 52, 40);
+        bl.addColorStop(0, '#ffffff');
+        bl.addColorStop(0.5, '#c8d2e0');
+        bl.addColorStop(1, '#7a8494');
+        g.fillStyle = bl;
+        g.beginPath();
+        g.moveTo(38, 8); g.lineTo(50, 4); g.lineTo(52, 16); g.lineTo(30, 44);
+        g.lineTo(24, 38); g.closePath(); g.fill();
+        g.fillStyle = '#6b4a2f';
+        g.fillRect(16, 36, 12, 5);
+        g.fillStyle = '#8b6a4a';
+        g.save();
+        g.translate(21, 46); g.rotate(-Math.PI / 4);
+        g.fillRect(-4, -4, 8, 14);
+        g.restore();
+        g.fillStyle = '#f4c542';
+        g.beginPath(); g.arc(22, 39, 3.5, 0, Math.PI * 2); g.fill();
+        break;
+      }
       default: { // crystal (diamond)
         var grad = g.createLinearGradient(10, 8, 54, 58);
         grad.addColorStop(0, '#ffffff');
@@ -1766,6 +2341,7 @@
 
     var ctx = this.ctx;
     var invDet = 1 / (this._planeX * this._dirY - this._dirX * this._planeY);
+    var zscale = this.rw / W;   // internal zbuf column for a display column
     for (var s = 0; s < list.length; s++) {
       var e = list[s];
       var rx = e.x - p.x, ry = e.y - p.y;
@@ -1781,9 +2357,23 @@
       ctx.globalAlpha = Math.max(0, Math.min(1, e.alpha * shadeF));
       var srcW = e.canvas.width;
       for (var x = Math.max(0, x0); x < Math.min(W, x1); x++) {
-        if (ty >= this.zbuf[x]) continue;
+        var zi = (x * zscale) | 0;
+        if (zi >= this.rw) zi = this.rw - 1;
+        if (ty >= this.zbuf[zi]) continue;
         var texX = Math.floor((x - x0) / (x1 - x0) * srcW);
         ctx.drawImage(e.canvas, texX, 0, 1, srcW, x, top, 1, size);
+      }
+      // soft ground shadow (v1.1) — grounds sprites into the floor
+      var midZi = ((screenX * zscale) | 0);
+      if (midZi >= 0 && midZi < this.rw && ty < this.zbuf[midZi]) {
+        var floorY = horizon + (H * 0.5) / ty;
+        if (floorY < H + 24) {
+          ctx.globalAlpha = Math.max(0, 0.32 * shadeF);
+          ctx.fillStyle = '#000000';
+          ctx.beginPath();
+          ctx.ellipse(screenX, Math.min(H - 2, floorY - 1), Math.max(2, size * 0.34), Math.max(1.5, size * 0.1), 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
     ctx.globalAlpha = 1;
@@ -1909,6 +2499,9 @@
           var base = this.spec.wallColors[ch] || [130, 130, 140];
           ctx.fillStyle = 'rgba(' + base[0] + ',' + base[1] + ',' + base[2] + ',0.9)';
           ctx.fillRect(ox + x * cell, oy + y * cell, cell, cell);
+        } else if (ch === '~') {
+          ctx.fillStyle = 'rgba(46, 120, 180, 0.8)';
+          ctx.fillRect(ox + x * cell, oy + y * cell, cell, cell);
         } else if (ch !== '.' && ch !== ' ') {
           ctx.fillStyle = 'rgba(90,90,110,0.55)';
           ctx.fillRect(ox + x * cell, oy + y * cell, cell, cell);
@@ -1960,8 +2553,17 @@
 
     if (this.state === 'menu') { this.drawMenu(dt); return; }
 
-    this.renderWalls();
+    if (this.spec.texture === false) this.renderWallsFlat();
+    else this.render3D();
     this.renderSprites();
+
+    // underwater tint
+    if (this.playerInWater) {
+      var tint = this.ctx;
+      tint.fillStyle = 'rgba(18, 66, 104, 0.20)';
+      tint.fillRect(0, 0, this.W, this.H);
+    }
+
     if (this.state === 'play' || this.state === 'pause') this.drawWeapon();
     this.drawHUD();
 
@@ -2051,7 +2653,7 @@
 
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.font = '10px "Courier New", monospace';
-    ctx.fillText('built with votyer.js v' + VERSION + ' — a language for retro html5 games', W / 2, H - 14);
+    ctx.fillText('built with votyer.js v' + VERSION + ' — water & light edition', W / 2, H - 14);
   };
 
   Engine.prototype.drawCenterScreen = function (big, color, small, hint) {
@@ -2105,7 +2707,8 @@
    * ================================================================ */
   var SOUNDS = {
     blip: 1, pickup: 1, hurt: 1, hit: 1, shoot: 1, kill: 1,
-    win: 1, lose: 1, unlock: 1, denied: 1
+    win: 1, lose: 1, unlock: 1, denied: 1,
+    splash: 1, heal: 1, zap: 1
   };
 
   function AudioSynth(engine) {
@@ -2142,6 +2745,26 @@
     osc.connect(gain); gain.connect(this.master);
     osc.start(t0); osc.stop(t0 + dur + 0.02);
   };
+  AudioSynth.prototype.noise = function (dur, f0, f1, vol, type) {
+    if (!this.ctx) return;
+    var t0 = this.ctx.currentTime;
+    var len = Math.max(1, Math.floor(this.ctx.sampleRate * dur));
+    var buffer = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    var src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    var filter = this.ctx.createBiquadFilter();
+    filter.type = type || 'bandpass';
+    filter.frequency.setValueAtTime(Math.max(40, f0), t0);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t0 + dur);
+    filter.Q.value = 0.9;
+    var gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(vol || 0.3, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    src.connect(filter); filter.connect(gain); gain.connect(this.master);
+    src.start(t0); src.stop(t0 + dur + 0.02);
+  };
   AudioSynth.prototype.play = function (name) {
     this.ensure();
     if (!this.ctx) return;
@@ -2175,6 +2798,18 @@
         this.tone(311, 311, 0.18, 'sawtooth', 0.2, 0.16);
         this.tone(262, 262, 0.18, 'sawtooth', 0.4, 0.16);
         this.tone(196, 150, 0.4, 'sawtooth', 0.6, 0.18);
+        break;
+      case 'splash':
+        this.noise(0.38, 1500, 220, 0.34, 'bandpass');
+        this.tone(300, 90, 0.22, 'sine', 0, 0.14);
+        break;
+      case 'heal':
+        this.tone(523, 659, 0.12, 'sine', 0, 0.16);
+        this.tone(659, 880, 0.18, 'sine', 0.1, 0.16);
+        break;
+      case 'zap':
+        this.tone(1400, 90, 0.16, 'sawtooth', 0, 0.2);
+        this.noise(0.14, 3200, 500, 0.16);
         break;
       default: this.tone(440, 660, 0.08, 'square', 0, 0.16);
     }
@@ -2269,6 +2904,22 @@
     else autoEmbed();
   }
 
+  var SHAPES = [
+    'crystal', 'orb', 'star', 'coin', 'key', 'potion', 'sword',
+    'chest', 'torch', 'barrel', 'mushroom', 'skull', 'ghost', 'blob', 'robot'
+  ];
+
+  // draw any built-in shape onto a canvas — powers the sprites gallery
+  function spritePreview(canvas, shape, color, glow) {
+    var size = canvas.width || 96;
+    canvas.height = size;
+    var s = makeSprite(shape || 'crystal', color || '#5eead4', glow !== false);
+    var g = canvas.getContext('2d');
+    g.clearRect(0, 0, size, size);
+    g.imageSmoothingEnabled = true;
+    g.drawImage(s.cv, 0, 0, size, size);
+  }
+
   var Votyer = {
     version: VERSION,
     compile: compile,
@@ -2278,7 +2929,9 @@
     buildSpec: buildSpec,
     Engine: Engine,
     VError: VError,
-    sounds: Object.keys(SOUNDS)
+    sounds: Object.keys(SOUNDS),
+    shapes: SHAPES,
+    spritePreview: spritePreview
   };
   return Votyer;
 });

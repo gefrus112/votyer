@@ -3,10 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Playground — votyer.js</title>
-<meta name="description" content="Write votyer code in the browser and run it instantly. The whole language and raycasting engine compile live.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b0b1e'/%3E%3Cpath d='M16 5 L26 16 L16 27 L6 16 Z' fill='%235eead4'/%3E%3C/svg%3E">
+<title>Playground — votyer.js &amp; E#</title>
+<meta name="description" content="A real code editor in your browser: write votyer games or E# websites and run them instantly. Syntax highlighting, presets, shareable links.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
+<style>
+.pg2-editor{position:relative;display:flex;background:#0a0c16;min-height:460px;border-radius:0 0 14px 14px;overflow:hidden}
+.ed-gutter{padding:14px 10px 14px 14px;text-align:right;color:rgba(226,232,255,0.28);font:12.5px/1.6 "SFMono-Regular",Consolas,"Courier New",monospace;user-select:none;white-space:pre;overflow:hidden;border-right:1px solid var(--line);min-width:44px}
+.ed-body{position:relative;flex:1;overflow:hidden}
+.ed-hl,.pg2-editor textarea{position:absolute;inset:0;margin:0;padding:14px 16px;font:12.5px/1.6 "SFMono-Regular",Consolas,"Courier New",monospace;white-space:pre;overflow:auto;tab-size:4}
+.ed-hl{pointer-events:none;color:#dbe2ff}
+.pg2-editor textarea{position:absolute;inset:0;background:transparent;color:transparent;caret-color:#5eead4;border:none;outline:none;resize:none}
+.pg2-editor textarea::selection{background:rgba(94,234,212,0.22)}
+.ed-hl .tok-kw{color:#c4b5fd;font-weight:600}.ed-hl .tok-prop{color:#67e8f9}.ed-hl .tok-str{color:#86efac}
+.ed-hl .tok-num{color:#fca5a5}.ed-hl .tok-com{color:#64748b;font-style:italic}.ed-hl .tok-color{color:#fbbf24}
+.ed-hl .ek-sec{color:#c4b5fd;font-weight:600}.ed-hl .ek-key{color:#67e8f9}.ed-hl .ek-str{color:#86efac}
+.ed-hl .ek-col{color:#fbbf24}.ed-hl .ek-com{color:#64748b;font-style:italic}.ed-hl .ek-num{color:#fca5a5}.ed-hl .ek-fence{color:#f472b6}
+.mode-tabs{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.mode-tabs button{background:transparent;border:none;color:var(--dim);padding:8px 18px;font-weight:700;font-size:12px;letter-spacing:.08em;cursor:pointer;transition:all .15s ease}
+.mode-tabs button.active{background:linear-gradient(120deg,#5eead4,#8b5cf6);color:#06131a}
+.pg-console{background:#0a0c16;border:1px solid var(--line);border-radius:12px;margin-top:14px;padding:12px 16px;font:12px/1.7 "SFMono-Regular",Consolas,monospace;min-height:64px;max-height:150px;overflow:auto}
+.pg-head .cfile{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.pg-head .btn{white-space:nowrap}
+.pg-console .ln{color:var(--dim)} .pg-console .ln.err{color:#ff6b6b} .pg-console .ln.ok{color:#5eead4} .pg-console .ln.warn{color:#ffd166}
+.share-ok{color:#5eead4 !important}
+iframe#eout{width:100%;min-height:520px;border:none;border-radius:0 0 14px 14px;background:#fff;display:none}
+#stage{display:block;width:100%;height:auto;border-radius:0 0 14px 14px}
+@media(max-width:960px){.pg-wrap{grid-template-columns:1fr !important}}
+</style>
 </head>
 <body>
 
@@ -15,11 +39,12 @@
     <a class="logo" href="index.html">
       <span class="logo-mark"></span>
       <span class="logo-text">votyer<span class="logo-js">.js</span></span>
-      <span class="logo-badge">v1.0</span>
+      <span class="logo-badge">v1.1</span>
     </a>
     <div class="nav-links" id="nav-links">
       <a href="docs.html">Docs</a>
       <a href="tutorial.html">Tutorial</a>
+      <a href="sprites.html">Sprites</a>
       <a href="playground.html" class="active">Playground</a>
       <a href="votyer.html">Demo</a>
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
@@ -28,61 +53,169 @@
   </div>
 </nav>
 
-<main class="section" style="padding-top:calc(var(--nav-h) + 50px); max-width:1280px; width:100%;">
+<main class="section" style="padding-top:calc(var(--nav-h) + 50px); max-width:1320px; width:100%;">
   <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:8px;">
     <h1 class="section-title" style="margin:0;">Playground</h1>
-    <span style="color:var(--dim); font-size:13px;">edit the code — press RUN or Ctrl/Cmd+Enter</span>
+    <div class="mode-tabs" role="tablist">
+      <button id="tab-votyer" class="active" role="tab">VOTYER</button>
+      <button id="tab-esharp" role="tab">E#</button>
+    </div>
+    <span style="color:var(--dim); font-size:13px;">Ctrl/Cmd+Enter runs · Tab indents · code autosaves</span>
   </div>
-  <p class="section-sub" style="margin-bottom:22px;">The complete language and engine compile live in your browser. Pick a preset, tweak it, break it, fix it — nothing can crash the page because votyer errors render on the canvas.</p>
+  <p class="section-sub" style="margin-bottom:22px;">Two languages, one editor. <b>votyer</b> compiles into a live raycasting game; <b>E#</b> compiles into a complete website — with votyer games embedded. Share your work with the <b>Share</b> button.</p>
 
-  <div class="pg-wrap pg">
-    <div class="pg-editor">
-      <div class="pg-head">
-        <span class="cdot cd1" style="width:10px;height:10px;border-radius:50%;background:#ff5f57;display:inline-block;"></span>
-        <span class="cdot cd2" style="width:10px;height:10px;border-radius:50%;background:#febc2e;display:inline-block;"></span>
-        <span class="cdot cd3" style="width:10px;height:10px;border-radius:50%;background:#28c840;display:inline-block;"></span>
-        <span class="cfile">my-game.votyer</span>
-        <select id="preset" class="btn btn-ghost btn-sm" style="text-transform:none; letter-spacing:0; padding:6px 10px;" aria-label="Choose a preset">
-          <option value="starter">Preset: Getting started</option>
-          <option value="vault">Preset: Vault Runner (tutorial)</option>
-          <option value="arena">Preset: Arena combat</option>
-        </select>
+  <div class="pg-wrap pg" style="grid-template-columns:minmax(380px,46%) 1fr; gap:18px;">
+    <div class="pg-editor" style="padding:0; overflow:hidden; border-radius:14px;">
+      <div class="pg-head" style="border-radius:14px 14px 0 0;">
+        <span class="cdot cd1"></span><span class="cdot cd2"></span><span class="cdot cd3"></span>
+        <span class="cfile" id="fname">water-temple.votyer</span>
+        <select id="preset" class="btn btn-ghost btn-sm" style="text-transform:none; letter-spacing:0; padding:6px 10px; margin-left:auto;" aria-label="Choose a preset"></select>
+        <button class="btn btn-ghost btn-sm" id="share" title="Copy a link to this exact code">Share</button>
         <button class="btn btn-primary btn-sm" id="run">Run ▸</button>
       </div>
-      <textarea id="editor" spellcheck="false" aria-label="votyer source code"></textarea>
-      <div class="pg-status" id="status">votyer.js v1.0 loaded — press RUN to compile</div>
+      <div class="pg2-editor" id="editorbox">
+        <div class="ed-gutter" id="gutter">1</div>
+        <div class="ed-body">
+          <pre class="ed-hl" id="hl" aria-hidden="true"><code id="hlcode"></code></pre>
+          <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="source code"></textarea>
+        </div>
+      </div>
     </div>
 
-    <div class="pg-stage">
-      <div class="pg-head">
-        <span class="cfile">game output</span>
-        <span style="color:var(--dim); font-size:11.5px;">WASD · mouse · space</span>
+    <div class="pg-stage" style="padding:0; overflow:hidden; border-radius:14px;">
+      <div class="pg-head" style="border-radius:14px 14px 0 0;">
+        <span class="cfile" id="outname">game output</span>
+        <span style="color:var(--dim); font-size:11.5px; margin-left:auto;">WASD · mouse · space</span>
       </div>
       <canvas id="stage" width="800" height="500"></canvas>
+      <iframe id="eout" title="E# site preview" sandbox="allow-scripts allow-pointer-lock"></iframe>
     </div>
   </div>
 
-  <div class="callout" style="margin-top:26px;">
-    <b>Heads-up:</b> audio starts after you click (browser autoplay rules), pointer-lock mouse look needs a click on the canvas,
-    and if the canvas shows a red error panel the compiler has told you exactly which line to fix. Full language reference in the <a href="docs.html">docs</a>.
+  <div class="pg-console" id="console" aria-live="polite"><div class="ln">votyer.js v1.1 loaded — press Run ▸ or Ctrl/Cmd+Enter</div></div>
+
+  <div class="callout" style="margin-top:22px;">
+    <b>Tips:</b> audio starts after your first click (browser autoplay rules), pointer-lock mouse look needs a click on the canvas,
+    compile errors show the exact line in the console. Everything runs locally — nothing is uploaded. Full reference in the
+    <a href="docs.html">docs</a>, sprites in the <a href="sprites.html">gallery</a>.
   </div>
 </main>
 
 <footer class="footer">
   <div class="footer-inner">
     <span class="footer-logo">votyer<span class="logo-js">.js</span></span>
-    <span>the next-gen language for retro HTML5 games</span>
+    <span>the next-gen language for retro HTML5 games · water &amp; light edition</span>
     <span class="footer-links">
       <a href="index.html">Home</a> ·
       <a href="docs.html">Docs</a> ·
-      <a href="tutorial.html">Tutorial</a> ·
+      <a href="sprites.html">Sprites</a> ·
+      <a href="playground.html">Playground</a> ·
       <a href="https://github.com/gefrus112/votyer" target="_blank" rel="noopener">GitHub</a>
     </span>
   </div>
 </footer>
 
-<!-- ============ presets (kept as plain text so they survive HTML escaping) ============ -->
-<script type="text/plain" id="preset-starter">// a minimal votyer game — walk around, that's it!
+<!-- ==================== VOTYER PRESETS ==================== -->
+<script type="text/plain" id="vp-water">// ============================================
+//  WATER TEMPLE — the v1.1 showcase
+//  animated water, dynamic torch light,
+//  open sky & stars. Swim with WASD.
+// ============================================
+game "Water Temple" {
+    size 800 500
+    sky #0b1026
+    floor #3a3230
+    fog 0.5
+    fogcolor #0d1524
+    ceiling off      // open-air: gradient sky + stars
+    detail 0.7       // render resolution (0.3 - 1)
+}
+
+water {
+    color #1a6f92
+    wave 0.55
+    reflect 0.7
+}
+
+palette {
+    "1" #4a5568
+    "2" #2d3748
+}
+
+map {
+    "##############"
+    "#P...~~.....t#"
+    "#.##.~~.###.##"
+    "#.t..~~...c..#"
+    "#....~~.###..#"
+    "#.##.~~.##.C.#"
+    "#..c.~~....tG#"
+    "##############"
+}
+
+item "torch" {
+    char "t"
+    shape torch
+    color #ff9f43
+    pickup off        // decor: stays in the world
+    glow on           // emits real light
+}
+
+item "coin" {
+    char "c"
+    shape coin
+    color #fbbf24
+    value 10
+    on take {
+        score += 10
+        sound blip
+    }
+}
+
+item "gem" {
+    char "C"
+    shape crystal
+    color #5eead4
+    value 50
+    on take {
+        score += 50
+        sound pickup
+        say "The temple gem! The portal hums..."
+    }
+}
+
+exit {
+    char "G"
+    color #8b5cf6
+    locked on
+}
+
+rules {
+    on enter water {
+        sound splash
+        say "The water is warm and slow."
+    }
+    on exit water {
+        say "Back on dry stone."
+    }
+    on all items taken {
+        sound unlock
+        say "The temple door grinds open!"
+    }
+    on reach exit {
+        win
+    }
+}
+
+on start {
+    say "Swim the temple. Collect everything."
+    wait 3 {
+        say "Torches keep the dark away."
+    }
+}
+</script>
+
+<script type="text/plain" id="vp-starter">// a minimal votyer game — walk around, that's it!
 game "Getting Started" {
     size 800 500
     sky #101426
@@ -108,11 +241,11 @@ rules {
 
 on start {
     say "Welcome to votyer! Walk with WASD."
-    wait 2.5 { say "Try editing this file and pressing RUN." }
+    wait 2.5 { say "Try editing this file and pressing Run." }
 }
 </script>
 
-<script type="text/plain" id="preset-vault">game "Vault Runner" {
+<script type="text/plain" id="vp-vault">game "Vault Runner" {
     size 800 500
     sky #14142a
     floor #3a2c22
@@ -139,7 +272,6 @@ item "gem" {
     shape crystal
     color #5eead4
     value 50
-    glow on
     on take {
         score += 50
         sound pickup
@@ -149,7 +281,7 @@ item "gem" {
 
 item "coin" {
     char "c"
-    shape orb
+    shape coin
     color #fbbf24
     value 10
     on take {
@@ -200,7 +332,7 @@ on win  { say "Vault cleared like a pro." }
 on lose { say "The vault keeps its secrets." }
 </script>
 
-<script type="text/plain" id="preset-arena">game "Arena" {
+<script type="text/plain" id="vp-arena">game "Arena" {
     size 800 500
     sky #1a0f14
     floor #2b1a1a
@@ -259,73 +391,396 @@ on start {
     say "Clear the arena. Every kill pays 10."
 }
 </script>
+<!-- ==================== E# PRESETS ==================== -->
+<script type="text/plain" id="ep-portfolio">// ============================================
+//  A complete portfolio website in E#
+//  compiles to pure HTML + CSS + JS
+// ============================================
+site "Nova — Design Engineer" {
+
+  theme { accent #7c6cff  accent2 #22d3ee  bg #0b0d17  mode dark }
+
+  nav {
+    brand "NOVA"
+    link "Work" "#work"
+    link "Play" "#play"
+    cta "Hire me" "#contact"
+  }
+
+  hero {
+    kicker "DESIGN ENGINEER — PORTFOLIO"
+    title "I build products that feel alive."
+    sub "Interfaces, motion and real-time 3D for the modern web. Move your cursor through the galaxy."
+    button "See the work" "#work"
+    button "Play something" "#play"
+    galaxy on
+  }
+
+  features "What I do" {
+    item "Interfaces" "Design systems that scale with your team and survive contact with production."
+    item "Motion" "Micro-interactions that make products feel expensive."
+    item "Real-time 3D" "Interactive worlds that run in the browser — powered by votyer.js."
+  }
+
+  work "Selected work" {
+    project "Nebula" "Realtime analytics dashboard" #7c6cff #22d3ee
+    project "Orbit" "3D product configurator" #f472b6 #a78bfa
+    project "Pulse" "Mobile fitness companion" #34d399 #22d3ee
+    project "Atlas" "Design tokens platform" #fbbf24 #f472b6
+  }
+
+  stats {
+    stat "12+" "years crafting"
+    stat "80" "projects shipped"
+    stat "4.9" "client rating"
+  }
+
+  quote {
+    text "Nova ships polish you can feel. The site played a game before I read a word."
+    by "a very happy client"
+  }
+
+  game "Play a votyer mini-game right here" { preset water-temple }
+
+  code "This site is 60 lines of E#" {
+    title portfolio.e#
+    ```e#
+    site "Nova" {
+      hero {
+        title "I build products
+          that feel alive."
+        galaxy on
+      }
+      features "What I do" {
+        item "Interfaces" "Design systems."
+      }
+      game { preset water-temple }
+    }
+    ```
+  }
+
+  contact "Let's build something" {
+    email hi@nova.dev
+    github https://github.com/nova
+  }
+
+  footer { text "© 2026 Nova — built with E# and votyer.js" }
+}
+</script>
+
+<script type="text/plain" id="ep-product">// ============================================
+//  A product landing page in E#
+// ============================================
+site "Pulse — analytics that breathe" {
+
+  theme { accent #34d399  accent2 #22d3ee  bg #07090f  mode dark }
+
+  nav {
+    brand "PULSE"
+    link "Features" "#features"
+    link "Pricing" "#pricing"
+    cta "Start free" "#start"
+  }
+
+  hero {
+    kicker "REALTIME ANALYTICS"
+    title "Know your product is alive."
+    sub "Pulse streams every event into dashboards your whole team actually opens. No SQL degree required."
+    button "Start free" "#start"
+    button "See features" "#features"
+    galaxy on
+  }
+
+  features "Why teams switch" {
+    item "Live by default" "Every chart updates in real time. Refresh is a bug, not a feature."
+    item "Funnels in one click" "Drag events onto a canvas. Pulse writes the query."
+    item "Runs anywhere" "One script tag. Edge-fast. Your data stays yours."
+  }
+
+  stats {
+    stat "4.2B" "events / month"
+    stat "120ms" "median query"
+    stat "99.99%" "uptime"
+  }
+
+  quote {
+    text "We deleted 40 dashboards and kept one. It was Pulse."
+    by "Head of Product, Orbitscale"
+  }
+
+  code "Add Pulse to your site" {
+    title index.html
+    ```html
+    <script src="https://pulse.dev/p.js"
+            data-key="pk_live_51Hx"></script>
+    ```
+  }
+
+  contact "Start free — 1M events included" {
+    email hello@pulse.dev
+    github https://github.com/pulse
+  }
+
+  footer { text "© 2026 Pulse — crafted with E#" }
+}
+</script>
 
 <script src="votyer.js"></script>
+<script src="esharp.js"></script>
 <script src="assets/highlight.js"></script>
 <script src="assets/site.js"></script>
 <script>
 (function () {
   'use strict';
   var editor = document.getElementById('editor');
+  var hlcode = document.getElementById('hlcode');
+  var hlEl = document.getElementById('hl');
+  var gutter = document.getElementById('gutter');
   var stage = document.getElementById('stage');
-  var status = document.getElementById('status');
+  var eout = document.getElementById('eout');
+  var outname = document.getElementById('outname');
+  var fname = document.getElementById('fname');
   var presetSel = document.getElementById('preset');
   var runBtn = document.getElementById('run');
+  var shareBtn = document.getElementById('share');
+  var consoleEl = document.getElementById('console');
+  var tabV = document.getElementById('tab-votyer');
+  var tabE = document.getElementById('tab-esharp');
   var engine = null;
+  var mode = 'votyer';
 
-  function presetCode(name) {
-    var el = document.getElementById('preset-' + name);
-    return el ? el.textContent.replace(/^\n+/, '') : '';
+  // ---------- console ----------
+  function log(msg, cls) {
+    var d = document.createElement('div');
+    d.className = 'ln' + (cls ? ' ' + cls : '');
+    d.textContent = msg;
+    consoleEl.appendChild(d);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+    while (consoleEl.children.length > 60) consoleEl.removeChild(consoleEl.firstChild);
   }
 
-  function setPreset(name) {
-    editor.value = presetCode(name);
+  // ---------- presets ----------
+  var PRESETS = {
+    votyer: [
+      { id: 'water', label: 'Water Temple (v1.1 showcase)', file: 'water-temple.votyer' },
+      { id: 'starter', label: 'Getting started', file: 'my-game.votyer' },
+      { id: 'vault', label: 'Vault Runner (tutorial)', file: 'vault-runner.votyer' },
+      { id: 'arena', label: 'Arena combat', file: 'arena.votyer' }
+    ],
+    esharp: [
+      { id: 'portfolio', label: 'Portfolio website', file: 'portfolio.e#' },
+      { id: 'product', label: 'Product landing page', file: 'product.e#' }
+    ]
+  };
+
+  function presetCode(id) {
+    var el = document.getElementById((mode === 'votyer' ? 'vp-' : 'ep-') + id);
+    if (!el) return '';
+    // text/plain blocks cannot contain a literal closing script tag
+    return el.textContent.replace(/^\n+/, '').split('<\\/').join('</');
   }
 
+  function fillPresets() {
+    presetSel.innerHTML = '';
+    PRESETS[mode].forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p.id;
+      o.textContent = 'Preset: ' + p.label;
+      presetSel.appendChild(o);
+    });
+  }
+
+  // ---------- highlighting ----------
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  var E_KW = /^(site|theme|nav|hero|features|work|stats|quote|game|code|contact|footer|section)$/;
+  function hlEsharp(src) {
+    var out = '', i = 0, n = src.length;
+    while (i < n) {
+      var ch = src[i];
+      if (ch === '/' && src[i + 1] === '/') {
+        var e1 = src.indexOf('\n', i); if (e1 === -1) e1 = n;
+        out += '<span class="ek-com">' + esc(src.slice(i, e1)) + '</span>'; i = e1; continue;
+      }
+      if (ch === '`' && src.slice(i, i + 3) === '```') {
+        var e2 = src.indexOf('\n', i); if (e2 === -1) e2 = n;
+        out += '<span class="ek-fence">' + esc(src.slice(i, e2)) + '</span>'; i = e2; continue;
+      }
+      if (ch === '"' || ch === "'") {
+        var j = i + 1;
+        while (j < n && src[j] !== ch) { if (src[j] === '\\') j++; j++; }
+        j = Math.min(j + 1, n);
+        out += '<span class="ek-str">' + esc(src.slice(i, j)) + '</span>'; i = j; continue;
+      }
+      if (ch === '#' && /[0-9a-fA-F]/.test(src[i + 1] || '')) {
+        var k = i + 1;
+        while (k < n && /[0-9a-fA-F]/.test(src[k]) && k - i <= 7) k++;
+        out += '<span class="ek-col">' + esc(src.slice(i, k)) + '</span>'; i = k; continue;
+      }
+      if (/[0-9]/.test(ch)) {
+        var m = i;
+        while (m < n && /[0-9.]/.test(src[m])) m++;
+        out += '<span class="ek-num">' + esc(src.slice(i, m)) + '</span>'; i = m; continue;
+      }
+      if (/[A-Za-z_]/.test(ch)) {
+        var w = i;
+        while (w < n && /[A-Za-z0-9_#-]/.test(src[w])) w++;
+        var word = src.slice(i, w);
+        if (E_KW.test(word)) out += '<span class="ek-sec">' + esc(word) + '</span>';
+        else out += esc(word);
+        i = w; continue;
+      }
+      out += esc(ch); i++;
+    }
+    return out;
+  }
+  function highlight() {
+    var src = editor.value;
+    hlcode.innerHTML = (mode === 'votyer' ? window.VotyerHighlight(src) : hlEsharp(src)) + '\n';
+    var lines = src.split('\n').length;
+    var g = '';
+    for (var i = 1; i <= lines; i++) g += i + '\n';
+    gutter.textContent = g;
+  }
+  function syncScroll() {
+    hlEl.scrollTop = editor.scrollTop;
+    hlEl.scrollLeft = editor.scrollLeft;
+    gutter.scrollTop = editor.scrollTop;
+  }
+
+  // ---------- run ----------
   function stopEngine() {
     if (engine && engine.destroy) {
-      try { engine.destroy(); } catch (e) { /* already gone */ }
+      try { engine.destroy(); } catch (e) { /* gone */ }
     }
     engine = null;
   }
 
   function run() {
-    stopEngine();
     var code = editor.value;
-    var result = Votyer.compile(code);
-    if (!result.ok) {
-      Votyer.run(code, stage); // draws the error panel on the canvas
-      status.className = 'pg-status err';
-      status.textContent = 'COMPILE ERROR — ' + result.errors[0];
-      return;
+    saveLocal();
+    if (mode === 'votyer') {
+      eout.style.display = 'none';
+      stage.style.display = 'block';
+      outname.textContent = 'game output';
+      stopEngine();
+      var result = Votyer.compile(code);
+      if (!result.ok) {
+        Votyer.run(code, stage);   // draws the error panel on the canvas
+        log('COMPILE ERROR — ' + result.errors[0], 'err');
+        return;
+      }
+      engine = Votyer.run(code, stage);
+      var s = result.spec;
+      log('OK — "' + s.title + '" · map ' + s.mapW + 'x' + s.mapH +
+        ' · ' + Object.keys(s.items).length + ' item type(s), ' + Object.keys(s.enemies).length + ' enemy type(s)' +
+        (s.grid.join('').indexOf('~') !== -1 ? ' · water: on' : '') +
+        ' · click the canvas & play', 'ok');
+    } else {
+      stopEngine();
+      stage.style.display = 'none';
+      eout.style.display = 'block';
+      outname.textContent = 'E# site preview';
+      var r = ESharp.compile(code);
+      if (!r.ok) {
+        log('E# COMPILE ERROR — ' + r.errors[0], 'err');
+        eout.srcdoc = '<body style="background:#0a0c16;color:#ff6b6b;font-family:monospace;padding:24px"><h3>E# compile error</h3><pre>' + esc(r.errors.join('\n')) + '</pre></body>';
+        return;
+      }
+      eout.srcdoc = r.html;
+      log('OK — site compiled: ' + Math.round(r.html.length / 1024) + ' KB of standalone HTML', 'ok');
     }
-    engine = Votyer.run(code, stage);
-    var spec = result.spec;
-    status.className = 'pg-status ok';
-    status.textContent = 'OK — "' + spec.title + '" · map ' + spec.mapW + 'x' + spec.mapH +
-      ' · ' + Object.keys(spec.items).length + ' item type(s), ' +
-      Object.keys(spec.enemies).length + ' enemy type(s) · click the canvas & play';
   }
 
+  // ---------- persistence & sharing ----------
+  function saveLocal() {
+    try { localStorage.setItem('vpg-' + mode, editor.value); } catch (e) { /* private mode */ }
+  }
+  function b64e(str) { return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_'); }
+  function b64d(str) {
+    try { return decodeURIComponent(escape(atob(str.replace(/-/g, '+').replace(/_/g, '/')))); }
+    catch (e) { return null; }
+  }
+  function share() {
+    var hash = '#' + mode + '=' + b64e(editor.value);
+    history.replaceState(null, '', hash);
+    var link = location.origin + location.pathname + hash;
+    var done = function () { log('Share link copied to clipboard ✓ (' + link.length + ' chars)', 'ok'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(done, function () { log('Share link: ' + link, 'warn'); });
+    } else log('Share link: ' + link, 'warn');
+  }
+
+  // ---------- mode switching ----------
+  function setMode(m, keepCode) {
+    mode = m;
+    tabV.classList.toggle('active', m === 'votyer');
+    tabE.classList.toggle('active', m === 'esharp');
+    fillPresets();
+    fname.textContent = m === 'votyer' ? PRESETS.votyer[0].file : PRESETS.esharp[0].file;
+    stopEngine();
+    if (!keepCode) {
+      var saved = null;
+      try { saved = localStorage.getItem('vpg-' + m); } catch (e) { /* ignore */ }
+      editor.value = saved || presetCode(PRESETS[m][0].id);
+      presetSel.value = PRESETS[m][0].id;
+    }
+    highlight(); syncScroll();
+    run();
+  }
+
+  // ---------- events ----------
   runBtn.addEventListener('click', run);
-  presetSel.addEventListener('change', function () { setPreset(presetSel.value); run(); });
+  shareBtn.addEventListener('click', share);
+  presetSel.addEventListener('change', function () {
+    editor.value = presetCode(presetSel.value);
+    var p = PRESETS[mode].filter(function (x) { return x.id === presetSel.value; })[0];
+    fname.textContent = p ? p.file : 'code';
+    highlight(); syncScroll(); run();
+  });
+  tabV.addEventListener('click', function () { if (mode !== 'votyer') setMode('votyer'); });
+  tabE.addEventListener('click', function () { if (mode !== 'esharp') setMode('esharp'); });
+
+  var saveT = null;
+  editor.addEventListener('input', function () {
+    highlight();
+    clearTimeout(saveT);
+    saveT = setTimeout(saveLocal, 400);
+  });
+  editor.addEventListener('scroll', syncScroll);
   editor.addEventListener('keydown', function (e) {
-    // Tab inserts spaces
     if (e.key === 'Tab') {
       e.preventDefault();
       var s = editor.selectionStart, epos = editor.selectionEnd;
       editor.value = editor.value.slice(0, s) + '    ' + editor.value.slice(epos);
       editor.selectionStart = editor.selectionEnd = s + 4;
+      highlight();
     }
-    // Ctrl/Cmd + Enter runs
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       run();
     }
   });
 
-  setPreset('starter');
-  run();
+  // ---------- boot: shared link > local draft > preset ----------
+  (function boot() {
+    var m = /^#(votyer|v|esharp|e)=(.+)$/.exec(location.hash);
+    if (m) {
+      var isE = m[1].charAt(0) === 'e';
+      mode = isE ? 'esharp' : 'votyer';
+      tabV.classList.toggle('active', !isE);
+      tabE.classList.toggle('active', isE);
+      fillPresets();
+      fname.textContent = isE ? PRESETS.esharp[0].file : PRESETS.votyer[0].file;
+      var code = b64d(m[2]);
+      editor.value = code != null ? code : presetCode(PRESETS[mode][0].id);
+      highlight(); syncScroll(); run();
+      log(isE ? 'Loaded shared E# site from link' : 'Loaded shared votyer game from link', 'ok');
+      return;
+    }
+    setMode('votyer', false);
+  })();
 })();
 </script>
 </body>
